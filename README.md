@@ -42,14 +42,14 @@ anti-spoofing protection.
 
 ##  Project Structure
 face-attendance-system/
- data_collection/        # Streamlit app for registering new faces.
-├── recognition/            # ArcFace + FAISS pipeline
-├── detection/              # RetinaFace detection module
-├── antispoofing/           # MobileNetV2 liveness detection
-├── attendance/             # Attendance logging and export
-├── app.py                  # Main Streamlit application
-├── requirements.txt        # Dependencies
-└── README.md
+* data_collection/        # Streamlit app for registering new faces.
+* recognition/            # ArcFace + FAISS pipeline
+detection/              # RetinaFace detection module
+antispoofing/           # MobileNetV2 liveness detection
+attendance/             # Attendance logging and export
+app.py                  # Main Streamlit application
+requirements.txt        # Dependencies
+README.md
 
 ---
 Output Images
