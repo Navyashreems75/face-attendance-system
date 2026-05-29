@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Attendance — FaceAttend</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:#1B4FD8; --primary-light:#EEF2FF; --primary-mid:#C7D2FE;
+      --bg:#F4F6F9; --surface:#FFFFFF; --border:#E2E8F0;
+      --text:#0F172A; --muted:#64748B;
+      --success:#059669; --success-bg:#ECFDF5;
+      --warning:#D97706; --warning-bg:#FFFBEB;
+      --danger:#DC2626;  --danger-bg:#FEF2F2;
+      --radius:12px;
+      --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.04);
+      --shadow-md:0 4px 6px rgba(0,0,0,0.07),0 10px 30px rgba(0,0,0,0.07);
+    }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* NAVBAR */
+    .navbar { background:var(--surface); border-bottom:1px solid var(--border); height:62px; display:flex; align-items:center; justify-content:space-between; padding:0 32px; position:sticky; top:0; z-index:100; }
+    .navbar-brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
+    .brand-icon { width:34px; height:34px; background:var(--primary); border-radius:9px; display:flex; align-items:center; justify-content:center; }
+    .brand-icon svg { width:18px; height:18px; fill:white; }
+    .brand-text-main { font-size:15px; font-weight:700; color:var(--text); letter-spacing:-0.3px; }
+    .brand-text-sub  { font-size:11px; color:var(--muted); }
+    .navbar-center { display:flex; align-items:center; gap:4px; }
+    .nav-tab { padding:7px 14px; border-radius:8px; font-size:13px; font-weight:500; color:var(--muted); cursor:pointer; border:none; background:none; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+    .nav-tab:hover { background:var(--bg); color:var(--text); }
+    .nav-tab.active { background:var(--primary-light); color:var(--primary); font-weight:600; }
+    .navbar-right { display:flex; align-items:center; gap:12px; }
+    .date-badge { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:5px 11px; font-size:12px; color:var(--muted); font-weight:500; }
+    .live-dot { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--success); font-weight:600; }
+    .live-dot::before { content:''; width:6px; height:6px; background:var(--success); border-radius:50%; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+    .user-chip { display:flex; align-items:center; gap:8px; padding:5px 10px 5px 5px; background:var(--bg); border:1px solid var(--border); border-radius:24px; }
+    .user-chip-avatar { width:26px; height:26px; border-radius:50%; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+    .user-chip-name { font-size:12px; font-weight:600; color:var(--text); }
+    .btn-logout { display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:500; color:var(--muted); cursor:pointer; border:1px solid var(--border); background:var(--surface); font-family:'DM Sans',sans-serif; text-decoration:none; transition:all 0.15s; }
+    .btn-logout:hover { background:var(--danger-bg); color:var(--danger); border-color:#FECACA; }
+    .btn-logout svg { width:13px; height:13px; }
+
+    /* PAGE */
+    .page-body { max-width:1140px; margin:0 auto; padding:28px 24px; display:flex; flex-direction:column; gap:24px; }
+
+    /* GREETING */
+    .greeting-banner { background:linear-gradient(135deg,var(--primary) 0%,#3B6FE8 50%,#5B8FF0 100%); border-radius:var(--radius); padding:26px 30px; color:white; display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden; }
+    .greeting-banner::after  { content:''; position:absolute; right:-40px; top:-50px; width:200px; height:200px; background:rgba(255,255,255,0.06); border-radius:50%; pointer-events:none; }
+    .greeting-banner::before { content:''; position:absolute; right:80px; bottom:-60px; width:140px; height:140px; background:rgba(255,255,255,0.04); border-radius:50%; pointer-events:none; }
+    .greeting-text h2 { font-size:22px; font-weight:700; letter-spacing:-0.4px; }
+    .greeting-text p  { font-size:14px; opacity:0.8; margin-top:5px; line-height:1.5; }
+    .greeting-right   { text-align:right; flex-shrink:0; }
+    .greeting-pct     { font-size:48px; font-weight:700; font-family:'DM Mono',monospace; letter-spacing:-2px; line-height:1; }
+    .greeting-pct-label { font-size:12px; opacity:0.7; margin-top:4px; }
+
+    /* TODAY STRIP */
+    .today-strip { display:flex; align-items:center; gap:14px; padding:16px 20px; border-radius:var(--radius); border:1px solid; }
+    .today-strip.present { background:var(--success-bg); border-color:#A7F3D0; }
+    .today-strip.absent  { background:var(--danger-bg);  border-color:#FECACA; }
+    .today-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+    .today-strip.present .today-dot { background:var(--success); }
+    .today-strip.absent  .today-dot { background:var(--danger);  }
+    .today-info { flex:1; }
+    .today-info strong { font-size:14px; font-weight:700; display:block; }
+    .today-strip.present .today-info strong { color:var(--success); }
+    .today-strip.absent  .today-info strong { color:var(--danger);  }
+    .today-info span { font-size:12px; color:var(--muted); margin-top:2px; display:block; }
+    .today-time { font-family:'DM Mono',monospace; font-size:20px; font-weight:700; color:var(--success); flex-shrink:0; }
+    .today-time-label { font-size:10px; color:var(--muted); text-align:right; margin-top:2px; }
+
+    /* WARNING BANNER */
+    .warning-banner { background:#FFF7ED; border:1px solid #FED7AA; border-left:4px solid var(--warning); border-radius:var(--radius); padding:16px 20px; display:flex; align-items:flex-start; gap:14px; }
+    .warning-banner.danger { background:var(--danger-bg); border-color:#FECACA; border-left-color:var(--danger); }
+    .warning-banner-icon { width:36px; height:36px; border-radius:50%; background:#FED7AA; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .warning-banner.danger .warning-banner-icon { background:#FECACA; }
+    .warning-banner-icon svg { width:18px; height:18px; color:var(--warning); }
+    .warning-banner.danger .warning-banner-icon svg { color:var(--danger); }
+    .warning-banner-content strong { font-size:14px; font-weight:700; color:#92400E; display:block; margin-bottom:3px; }
+    .warning-banner.danger .warning-banner-content strong { color:#991B1B; }
+    .warning-banner-content p { font-size:13px; color:#92400E; line-height:1.5; }
+    .warning-banner.danger .warning-banner-content p { color:#991B1B; }
+
+    /* STAT CARDS */
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); transition:transform 0.2s,box-shadow 0.2s; }
+    .stat-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+    .stat-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+    .stat-icon svg { width:20px; height:20px; }
+    .stat-icon.blue   { background:var(--primary-light); color:var(--primary); }
+    .stat-icon.green  { background:var(--success-bg);    color:var(--success); }
+    .stat-icon.red    { background:var(--danger-bg);     color:var(--danger);  }
+    .stat-icon.orange { background:var(--warning-bg);    color:var(--warning); }
+    .stat-value { font-size:28px; font-weight:700; letter-spacing:-1px; font-family:'DM Mono',monospace; }
+    .stat-value.green  { color:var(--success); }
+    .stat-value.red    { color:var(--danger);  }
+    .stat-value.yellow { color:var(--warning); }
+    .stat-label { font-size:12px; color:var(--muted); font-weight:500; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+    .stat-sub   { font-size:12px; color:var(--muted); margin-top:6px; }
+
+    /* PROGRESS */
+    .progress-section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; box-shadow:var(--shadow); }
+    .progress-header  { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .progress-header h3 { font-size:14px; font-weight:700; }
+    .progress-header .pct-tag { font-size:13px; font-weight:700; font-family:'DM Mono',monospace; }
+    .progress-bar-bg   { height:10px; background:var(--border); border-radius:99px; position:relative; overflow:visible; }
+    .progress-bar-fill { height:100%; border-radius:99px; transition:width 1.2s cubic-bezier(0.4,0,0.2,1); }
+    .progress-bar-fill.green  { background:var(--success); }
+    .progress-bar-fill.yellow { background:var(--warning); }
+    .progress-bar-fill.red    { background:var(--danger);  }
+    .progress-marker { position:absolute; top:-4px; left:75%; transform:translateX(-50%); width:2px; height:18px; background:var(--primary); }
+    .progress-marker::after { content:'75%'; position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700; color:var(--primary); white-space:nowrap; font-family:'DM Mono',monospace; }
+    .progress-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:10px; }
+
+    /* STREAK */
+    .streak-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; box-shadow:var(--shadow); display:flex; align-items:center; gap:20px; }
+    .streak-icon-wrap { width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,#FEF3C7,#FDE68A); display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0; }
+    .streak-num   { font-size:36px; font-weight:700; font-family:'DM Mono',monospace; letter-spacing:-2px; line-height:1; color:var(--warning); }
+    .streak-label { font-size:13px; color:var(--muted); margin-top:3px; }
+    .streak-best  { text-align:right; flex-shrink:0; }
+    .streak-best-num   { font-size:22px; font-weight:700; font-family:'DM Mono',monospace; color:var(--text); }
+    .streak-best-label { font-size:11px; color:var(--muted); margin-top:2px; }
+
+    /* TWO COL */
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+
+    /* CARD */
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .card-header { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .card-header-left h3 { font-size:15px; font-weight:700; }
+    .card-header-left p  { font-size:12px; color:var(--muted); margin-top:2px; }
+
+    /* DONUT */
+    .donut-section { padding:24px 22px; }
+    .donut-wrap { display:flex; align-items:center; gap:28px; }
+    .donut-chart { position:relative; flex-shrink:0; width:140px; height:140px; }
+    .donut-chart svg { width:140px; height:140px; transform:rotate(-90deg); }
+    .donut-track { fill:none; stroke:var(--border); stroke-width:10; }
+    .donut-fill  { fill:none; stroke-width:10; stroke-linecap:round; transition:stroke-dasharray 1s cubic-bezier(0.4,0,0.2,1); }
+    .donut-fill.green  { stroke:var(--success); }
+    .donut-fill.yellow { stroke:var(--warning); }
+    .donut-fill.red    { stroke:var(--danger);  }
+    .donut-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .donut-pct    { font-size:26px; font-weight:700; font-family:'DM Mono',monospace; letter-spacing:-1px; line-height:1; }
+    .donut-pct.green  { color:var(--success); }
+    .donut-pct.yellow { color:var(--warning); }
+    .donut-pct.red    { color:var(--danger);  }
+    .donut-label { font-size:11px; color:var(--muted); margin-top:3px; }
+    .donut-legend { flex:1; }
+    .legend-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+    .legend-item:last-child { border-bottom:none; }
+    .legend-dot   { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .legend-dot.green { background:var(--success); }
+    .legend-dot.red   { background:var(--danger);  }
+    .legend-dot.grey  { background:var(--border);  }
+    .legend-label { font-size:13px; color:var(--muted); flex:1; }
+    .legend-val   { font-size:15px; font-weight:700; font-family:'DM Mono',monospace; color:var(--text); }
+
+    /* CALENDAR */
+    .calendar-section { padding:20px 22px; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+    .cal-day-header { font-size:10px; font-weight:600; color:var(--muted); text-align:center; padding-bottom:5px; }
+    .cal-day { aspect-ratio:1; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; cursor:default; position:relative; }
+    .cal-day.present { background:var(--success); color:white; }
+    .cal-day.absent  { background:#FEE2E2; color:var(--danger); }
+    .cal-day.empty   { background:transparent; }
+    .cal-day.future  { background:var(--bg); color:var(--border); }
+    .cal-day.weekend { background:transparent; color:var(--border); }
+    .cal-day[title]:hover::after { content:attr(title); position:absolute; bottom:110%; left:50%; transform:translateX(-50%); background:var(--text); color:white; font-size:10px; padding:3px 7px; border-radius:4px; white-space:nowrap; z-index:10; pointer-events:none; }
+    .cal-legend { display:flex; align-items:center; gap:16px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+    .cal-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+    .cal-legend-dot  { width:10px; height:10px; border-radius:3px; }
+
+    /* HISTORY TABLE */
+    .history-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .history-filters { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .input-group { display:flex; align-items:center; gap:7px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:6px 11px; }
+    .input-group svg { width:14px; height:14px; color:var(--muted); flex-shrink:0; }
+    .input-group input { border:none; background:none; outline:none; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); min-width:0; }
+    .filter-chip { padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+    .filter-chip.active-all     { background:var(--primary-light); border-color:var(--primary-mid); color:var(--primary); }
+    .filter-chip.active-present { background:var(--success-bg); border-color:#A7F3D0; color:var(--success); }
+    .filter-chip.active-absent  { background:var(--danger-bg);  border-color:#FECACA; color:var(--danger);  }
+    table { width:100%; border-collapse:collapse; }
+    thead th { padding:11px 18px; text-align:left; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; background:var(--bg); border-bottom:1px solid var(--border); }
+    tbody tr { border-bottom:1px solid var(--border); transition:background 0.12s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:#FAFBFD; }
+    tbody td { padding:13px 18px; font-size:13px; vertical-align:middle; }
+    .status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 11px; border-radius:20px; font-size:12px; font-weight:600; }
+    .status-badge::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+    .status-badge.present { background:var(--success-bg); color:var(--success); }
+    .status-badge.absent  { background:var(--danger-bg);  color:var(--danger);  }
+    .method-chip { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:500; background:var(--bg); color:var(--muted); border:1px solid var(--border); }
+    .empty-state { text-align:center; padding:48px 24px; color:var(--muted); }
+    .empty-state svg { width:40px; height:40px; opacity:0.3; margin-bottom:10px; }
+    .empty-state p { font-size:14px; }
+
+    /* SUBJECTS */
+    .subjects-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .subject-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow); border-left:4px solid var(--border); transition:transform 0.2s,box-shadow 0.2s; }
+    .subject-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+    .subject-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+    .subject-name { font-size:14px; font-weight:700; color:var(--text); }
+    .subject-teacher { font-size:11px; color:var(--muted); margin-top:2px; }
+    .subject-pct-badge { font-size:13px; font-weight:700; font-family:'DM Mono',monospace; padding:3px 9px; border-radius:20px; }
+    .subject-pct-badge.green  { background:var(--success-bg); color:var(--success); }
+    .subject-pct-badge.yellow { background:var(--warning-bg); color:var(--warning); }
+    .subject-pct-badge.red    { background:var(--danger-bg);  color:var(--danger);  }
+    .subject-bar-bg   { height:6px; background:var(--border); border-radius:99px; margin-bottom:10px; }
+    .subject-bar-fill { height:100%; border-radius:99px; }
+    .subject-bar-fill.green  { background:var(--success); }
+    .subject-bar-fill.yellow { background:var(--warning); }
+    .subject-bar-fill.red    { background:var(--danger);  }
+    .subject-meta { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); }
+    .subject-today.present { color:var(--success); font-weight:600; }
+    .subject-today.absent  { color:var(--danger);  font-weight:600; }
+
+    /* TOAST */
+    .toast-container { position:fixed; bottom:24px; right:24px; z-index:999; display:flex; flex-direction:column; gap:8px; }
+    .toast { background:var(--text); color:white; padding:12px 18px; border-radius:10px; font-size:13px; font-weight:500; box-shadow:0 4px 20px rgba(0,0,0,0.2); animation:toastIn 0.25s ease; }
+    @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    .toast.success { background:var(--success); }
+
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+    @media (max-width:820px) {
+      .stats-grid { grid-template-columns:repeat(2,1fr); }
+      .two-col { grid-template-columns:1fr; }
+      .navbar-center { display:none; }
+      .page-body { padding:20px 16px; }
+      .navbar { padding:0 16px; }
+      .subjects-grid { grid-template-columns:repeat(2,1fr); }
+    }
+
+    /* ── PDF / PRINT STYLES ── */
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: white !important; }
+      .navbar, .today-strip, .filter-chip, #btnExportPDF,
+      .toast-container, .greeting-banner::before, .greeting-banner::after { display: none !important; }
+      .page-body { padding: 12px !important; gap: 16px !important; max-width: 100% !important; }
+      .greeting-banner { background: #1B4FD8 !important; border-radius: 8px !important; padding: 16px 20px !important; page-break-inside: avoid; }
+      .stats-grid { break-inside: avoid; }
+      .stat-card  { box-shadow: none !important; border: 1px solid #E2E8F0 !important; page-break-inside: avoid; }
+      .two-col    { grid-template-columns: 1fr 1fr !important; break-inside: avoid; }
+      .card       { box-shadow: none !important; border: 1px solid #E2E8F0 !important; }
+      table { font-size: 11px !important; }
+      tbody tr    { page-break-inside: avoid; }
+      .history-filters { display: none !important; }
+      .pdf-header { display: block !important; }
+    }
+    .pdf-header {
+      display: none;
+      padding: 0 0 12px 0;
+      border-bottom: 2px solid #1B4FD8;
+      margin-bottom: 16px;
+    }
+    .pdf-header-title { font-size: 20px; font-weight: 700; color: #1B4FD8; }
+    .pdf-header-meta  { font-size: 12px; color: #64748B; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="#">
+    <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+    <div><div class="brand-text-main">FaceAttend</div><div class="brand-text-sub">Attendance System</div></div>
+  </a>
+  <div class="navbar-center">
+    <button class="nav-tab active" id="tabOverview" onclick="scrollToSection('overview')">Overview</button>
+    <button class="nav-tab"        id="tabHistory"  onclick="scrollToSection('historySection')">History</button>
+  </div>
+  <div class="navbar-right">
+    <div class="live-dot" id="liveDot">Live</div>
+    <div class="date-badge" id="todayDate">—</div>
+    <div class="user-chip">
+      <div class="user-chip-avatar" id="navAvatar">NS</div>
+      <div class="user-chip-name"   id="navName">Student</div>
+    </div>
+    <a class="btn-logout" href="/logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </a>
+  </div>
+</nav>
+
+<!-- PDF HEADER — only visible when printing -->
+<div class="pdf-header" id="pdfHeader">
+  <div class="pdf-header-title">FaceAttend — My Attendance Report</div>
+  <div class="pdf-header-meta" id="pdfHeaderMeta"></div>
+</div>
+
+<div class="page-body" id="overview">
+
+  <!-- Greeting -->
+  <div class="greeting-banner">
+    <div class="greeting-text">
+      <h2 id="greetingText">Welcome back!</h2>
+      <p  id="greetingSubtext">Loading your attendance data...</p>
+    </div>
+    <div class="greeting-right">
+      <div class="greeting-pct" id="greetingPct">—%</div>
+      <div class="greeting-pct-label">overall attendance</div>
+    </div>
+  </div>
+
+  <!-- TODAY STATUS STRIP -->
+  <div class="today-strip absent" id="todayStrip">
+    <div class="today-dot"></div>
+    <div class="today-info">
+      <strong id="todayStripStatus">Checking today's status...</strong>
+      <span   id="todayStripSub">—</span>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div class="today-time"      id="todayStripTime"      style="display:none"></div>
+      <div class="today-time-label" id="todayStripTimeLabel" style="display:none">Check-in Time</div>
+    </div>
+  </div>
+
+  <!-- Warning Banner -->
+  <div class="warning-banner" id="warningBanner" style="display:none">
+    <div class="warning-banner-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="warning-banner-content">
+      <strong id="warningTitle">Attendance below required 75%</strong>
+      <p      id="warningMsg">—</p>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div class="stat-value green" id="statPresent">—</div>
+      <div class="stat-label">Days Present</div>
+      <div class="stat-sub"   id="statPresentSub">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+      <div class="stat-value red" id="statAbsent">—</div>
+      <div class="stat-label">Days Absent</div>
+      <div class="stat-sub"  id="statAbsentSub">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="stat-value" id="statPct" style="color:var(--primary)">—</div>
+      <div class="stat-label">Attendance %</div>
+      <div class="stat-sub"   id="statPctSub">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="stat-value" id="statStreak" style="color:var(--warning)">—</div>
+      <div class="stat-label">Day Streak 🔥</div>
+      <div class="stat-sub"   id="statStreakSub">—</div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section">
+    <div class="progress-header">
+      <h3>Progress towards 75% requirement</h3>
+      <span class="pct-tag" id="progressTag">—</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      <div class="progress-marker"></div>
+    </div>
+    <div class="progress-labels">
+      <span>0%</span>
+      <span id="progressNeed" style="color:var(--muted)"></span>
+      <span>100%</span>
+    </div>
+  </div>
+
+  <!-- Streak Card -->
+  <div class="streak-card">
+    <div class="streak-icon-wrap">🔥</div>
+    <div style="flex:1">
+      <div class="streak-num"   id="streakNum">—</div>
+      <div class="streak-label">Current attendance streak</div>
+    </div>
+    <div class="streak-best">
+      <div class="streak-best-num"   id="streakBest">—</div>
+      <div class="streak-best-label">Personal best</div>
+    </div>
+  </div>
+
+  <!-- Subject-wise (only shown if backend provides subject_stats) -->
+  <div id="subjectSection" style="display:none">
+    <div style="margin-bottom:14px">
+      <h3 style="font-size:15px;font-weight:700">Subject-wise Attendance</h3>
+      <p style="font-size:12px;color:var(--muted);margin-top:2px">Breakdown across all your subjects</p>
+    </div>
+    <div class="subjects-grid" id="subjectsGrid"></div>
+  </div>
+
+  <!-- Donut + Calendar -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left"><h3>Attendance Breakdown</h3><p>Your overall presence this term</p></div>
+      </div>
+      <div class="donut-section">
+        <div class="donut-wrap">
+          <div class="donut-chart">
+            <svg viewBox="0 0 36 36">
+              <circle class="donut-track" cx="18" cy="18" r="13"/>
+              <circle class="donut-fill" id="donutFill" cx="18" cy="18" r="13" stroke-dasharray="0 100"/>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct"   id="donutPct">—</div>
+              <div class="donut-label">attended</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left"><h3>Monthly Calendar</h3><p id="calMonthLabel">Attendance heatmap</p></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button onclick="changeCalMonth(-1)" title="Previous month"
+            style="background:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--muted)">&#8249;</button>
+          <button onclick="changeCalMonth(1)" title="Next month"
+            style="background:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--muted)" id="calNextBtn">&#8250;</button>
+        </div>
+      </div>
+      <div class="calendar-section">
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend">
+          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--success)"></div>Present</div>
+          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#FEE2E2"></div>Absent</div>
+          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--bg)"></div>Upcoming</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Table -->
+  <div class="history-card" id="historySection">
+    <div class="card-header">
+      <div class="card-header-left">
+        <h3>Attendance History</h3>
+        <p id="historySubtext">All your records, most recent first</p>
+      </div>
+      <div class="history-filters">
+        <button class="filter-chip active-all" id="chipAll"     onclick="setFilter('all')">All</button>
+        <button class="filter-chip"            id="chipPresent" onclick="setFilter('present')">Present</button>
+        <button class="filter-chip"            id="chipAbsent"  onclick="setFilter('absent')">Absent</button>
+        <div class="input-group">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <input type="month" id="monthFilter" onchange="applyFilters()"/>
+        </div>
+        <button class="filter-chip" id="btnExportPDF" onclick="exportPDF()" style="background:var(--primary);color:white;border-color:var(--primary);display:flex;align-items:center;gap:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Export PDF
+        </button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Date</th><th>Day</th><th>Time In</th><th>Status</th><th>Method</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // ── Flask-injected variables — DO NOT add demo/hardcoded data here ──
+  const STUDENT       = {{ student | tojson }};
+  const RECORDS       = {{ records | tojson }};
+  const SUBJECT_STATS = {{ subject_stats | tojson }};
+  let activeFilter = 'all';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setupDateDisplay();
+    setupGreeting();
+    setupStats();
+    setupProgress();
+    renderSubjects();
+    renderDonut();
+    renderCalendar();
+    renderHistoryTable();
+    setupScrollSpy();
+    startLivePoll();
+  });
+
+  function setupDateDisplay() {
+    const now = new Date();
+    document.getElementById('todayDate').textContent =
+      now.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+    const yy = now.getFullYear(), mm = String(now.getMonth() + 1).padStart(2, '0');
+    document.getElementById('monthFilter').value = `${yy}-${mm}`;
+    // calMonthLabel is now set by renderCalendar() — no need to set here
+  }
+
+  function setupGreeting() {
+    const h = new Date().getHours();
+    const greeting = h>=5&&h<12 ? 'Good morning' : h>=12&&h<17 ? 'Good afternoon' : h>=17&&h<21 ? 'Good evening' : 'Good night';
+    const first = STUDENT.full_name.split(' ')[0];
+    document.getElementById('greetingText').textContent = `${greeting}, ${first}!`;
+    document.getElementById('navName').textContent      = first;
+    document.getElementById('navAvatar').textContent    = initials(STUDENT.full_name);
+    const pct = STUDENT.percentage;
+    let subtext = pct >= 90 ? "Excellent work — you're among the most consistent students."
+                : pct >= 75 ? (STUDENT.streak > 0 ? `You're on track. ${STUDENT.streak}-day streak — keep it going!` : "You're on track. Keep attending regularly.")
+                : pct >= 50 ? "Your attendance needs improvement. Let's get back on track."
+                :             "Your attendance is critically low. Please attend classes regularly.";
+    document.getElementById('greetingSubtext').textContent = subtext;
+    document.getElementById('greetingPct').textContent     = pct + '%';
+    renderTodayStrip();
+    if (pct < 75) {
+      const banner = document.getElementById('warningBanner');
+      banner.style.display = 'flex';
+      if (pct < 50) { banner.classList.add('danger'); document.getElementById('warningTitle').textContent = 'Critical: Attendance below 50%'; }
+      const daysNeeded = Math.max(0, Math.ceil((0.75 * STUDENT.total_days - STUDENT.present) / 0.25));
+      document.getElementById('warningMsg').textContent =
+        `You currently have ${pct}% attendance. You need to attend at least ${daysNeeded} more consecutive day${daysNeeded !== 1 ? 's' : ''} to reach the required 75%.`;
+    }
+  }
+
+  // FIX: single source of truth — use STUDENT.today (server-provided) only
+  function renderTodayStrip() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    // Find today's record from the RECORDS array for the check-in time
+    const todayRec  = RECORDS.find(r => r.date === todayStr && r.status === 'present');
+    const strip     = document.getElementById('todayStrip');
+    const statusEl  = document.getElementById('todayStripStatus');
+    const subEl     = document.getElementById('todayStripSub');
+    const timeEl    = document.getElementById('todayStripTime');
+    const timeLbl   = document.getElementById('todayStripTimeLabel');
+
+    if (STUDENT.today) {
+      strip.className      = 'today-strip present';
+      statusEl.textContent = '✓ Present Today';
+      subEl.textContent    = 'Your attendance has been marked for today';
+      if (todayRec && todayRec.time) {
+        timeEl.textContent    = fmt12h(todayRec.time);
+        timeEl.style.display  = 'block';
+        timeLbl.style.display = 'block';
+      } else {
+        timeEl.style.display  = 'none';
+        timeLbl.style.display = 'none';
+      }
+    } else {
+      strip.className      = 'today-strip absent';
+      statusEl.textContent = '✗ Not Marked Yet';
+      subEl.textContent    = 'Your attendance has not been recorded today';
+      timeEl.style.display  = 'none';
+      timeLbl.style.display = 'none';
+    }
+  }
+
+  function setupStats() {
+    const s = STUDENT;
+    document.getElementById('statPresent').textContent    = s.present;
+    document.getElementById('statPresentSub').textContent = `out of ${s.total_days} total`;
+    document.getElementById('statAbsent').textContent     = s.absent;
+    document.getElementById('statAbsentSub').textContent  = s.absent === 0 ? 'Perfect record!' : `${s.absent} day${s.absent !== 1 ? 's' : ''} missed`;
+    document.getElementById('statPct').textContent        = s.percentage + '%';
+    document.getElementById('statPctSub').textContent     = s.percentage >= 75 ? 'Above requirement ✓' : 'Below 75% requirement';
+    document.getElementById('statStreak').textContent     = s.streak;
+    document.getElementById('statStreakSub').textContent  = s.streak === 0 ? 'No active streak' : 'consecutive days';
+    document.getElementById('streakNum').textContent      = s.streak;
+    document.getElementById('streakBest').textContent     = s.best_streak;
+  }
+
+  function setupProgress() {
+    const pct = STUDENT.percentage, cls = pctClass(pct);
+    const fill = document.getElementById('progressFill');
+    fill.className = `progress-bar-fill ${cls}`;
+    requestAnimationFrame(() => setTimeout(() => { fill.style.width = Math.min(pct, 100) + '%'; }, 100));
+    const tag = document.getElementById('progressTag');
+    if (pct >= 75) {
+      tag.style.color = 'var(--success)';
+      tag.textContent = 'On track ✓';
+      document.getElementById('progressNeed').textContent = '';
+    } else {
+      const gap = Math.max(0, Math.ceil((0.75 * STUDENT.total_days - STUDENT.present) / 0.25));
+      tag.style.color = 'var(--danger)';
+      tag.textContent = `${gap} more day${gap !== 1 ? 's' : ''} needed`;
+      document.getElementById('progressNeed').textContent = `Need ${gap} more`;
+    }
+  }
+
+  function renderSubjects() {
+    if (!SUBJECT_STATS || !SUBJECT_STATS.length) return;
+    document.getElementById('subjectSection').style.display = 'block';
+    document.getElementById('subjectsGrid').innerHTML = SUBJECT_STATS.map(s => {
+      const cls      = pctClass(s.percentage);
+      const todayCls = s.today === 'Present' ? 'present' : s.today === 'Absent' ? 'absent' : '';
+      // FIX: use s.color if provided, otherwise fall back to a neutral border color
+      const borderColor = s.color || s.border || 'var(--border)';
+      return `<div class="subject-card" style="border-left-color:${borderColor}">
+        <div class="subject-card-header">
+          <div><div class="subject-name">${s.name}</div><div class="subject-teacher">${s.teacher || ''}</div></div>
+          <span class="subject-pct-badge ${cls}">${s.percentage}%</span>
+        </div>
+        <div class="subject-bar-bg"><div class="subject-bar-fill ${cls}" style="width:${Math.min(s.percentage, 100).toFixed(1)}%"></div></div>
+        <div class="subject-meta">
+          <span>${s.present}P / ${s.absent}A of ${s.total} classes</span>
+          <span class="subject-today ${todayCls}">Today: ${s.today || '—'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderDonut() {
+    const s = STUDENT, cls = pctClass(s.percentage), circ = 2 * Math.PI * 13;
+    const fill = document.getElementById('donutFill');
+    fill.className = `donut-fill ${cls}`;
+    requestAnimationFrame(() => setTimeout(() => {
+      fill.setAttribute('stroke-dasharray', `${(s.percentage / 100 * circ).toFixed(2)} ${circ.toFixed(2)}`);
+    }, 200));
+    const pctEl = document.getElementById('donutPct');
+    pctEl.textContent = s.percentage + '%';
+    pctEl.className   = `donut-pct ${cls}`;
+    document.getElementById('donutLegend').innerHTML = `
+      <div class="legend-item"><div class="legend-dot green"></div><div class="legend-label">Present days</div><div class="legend-val">${s.present}</div></div>
+      <div class="legend-item"><div class="legend-dot red"></div><div class="legend-label">Absent days</div><div class="legend-val">${s.absent}</div></div>
+      <div class="legend-item"><div class="legend-dot grey"></div><div class="legend-label">Total days</div><div class="legend-val">${s.total_days}</div></div>`;
+  }
+
+  // Calendar navigation state — starts at current month
+  const _calNow = new Date();
+  let _calYear  = _calNow.getFullYear();
+  let _calMonth = _calNow.getMonth();   // 0-indexed
+
+  function changeCalMonth(delta) {
+    _calMonth += delta;
+    if (_calMonth > 11) { _calMonth = 0;  _calYear++; }
+    if (_calMonth <  0) { _calMonth = 11; _calYear--; }
+    // Disable "next" button if we're already at or past the current real month
+    const nowY = _calNow.getFullYear(), nowM = _calNow.getMonth();
+    const nextBtn = document.getElementById('calNextBtn');
+    if (nextBtn) nextBtn.disabled = (_calYear > nowY) || (_calYear === nowY && _calMonth >= nowM);
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    const year  = _calYear;
+    const month = _calMonth;
+    const nowY  = _calNow.getFullYear();
+    const nowM  = _calNow.getMonth();
+    const nowD  = _calNow.getDate();
+    // Is the displayed month in the past, present, or future relative to today?
+    const isCurrentMonth = (year === nowY && month === nowM);
+    const isPastMonth    = (year < nowY) || (year === nowY && month < nowM);
+
+    const monthName = new Date(year, month, 1).toLocaleDateString('en-IN', { month:'long', year:'numeric' });
+    document.getElementById('calMonthLabel').textContent = monthName;
+
+    const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    let html = days.map(d => `<div class="cal-day-header">${d}</div>`).join('');
+
+    // Build a quick-lookup from RECORDS for this month
+    const presentMap = {};
+    RECORDS.forEach(r => {
+      const d = new Date(r.date + 'T00:00:00');
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        if (r.status === 'present') presentMap[d.getDate()] = r.time || '';
+      }
+    });
+
+    const firstDay    = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dow  = new Date(year, month, d).getDay();
+      const isFuture = isCurrentMonth ? d > nowD : !isPastMonth;
+      let cls = '', tip = '';
+      const shortDate = new Date(year, month, d).toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+      if (dow === 0 || dow === 6) {
+        cls = 'weekend'; tip = 'Weekend';
+      } else if (isFuture) {
+        cls = 'future'; tip = `${shortDate} — upcoming`;
+      } else if (d in presentMap) {
+        cls = 'present'; tip = `Present — ${shortDate}${presentMap[d] ? ' · ' + fmt12h(presentMap[d]) : ''}`;
+      } else {
+        cls = 'absent'; tip = `Absent — ${shortDate}`;
+      }
+      html += `<div class="cal-day ${cls}" title="${tip}">${d}</div>`;
+    }
+    document.getElementById('calGrid').innerHTML = html;
+
+    // Disable next button if already at current month
+    const nextBtn = document.getElementById('calNextBtn');
+    if (nextBtn) nextBtn.disabled = (_calYear > nowY) || (_calYear === nowY && _calMonth >= nowM);
+  }
+
+  function renderHistoryTable() {
+    const tbody    = document.getElementById('historyTableBody');
+    const monthVal = document.getElementById('monthFilter').value;
+    let filtered   = [...RECORDS];
+    if (monthVal)             filtered = filtered.filter(r => r.date.startsWith(monthVal));
+    if (activeFilter !== 'all') filtered = filtered.filter(r => r.status === activeFilter);
+    // Show most recent first
+    filtered.sort((a, b) => b.date.localeCompare(a.date));
+    document.getElementById('historySubtext').textContent = `Showing ${filtered.length} record${filtered.length !== 1 ? 's' : ''}`;
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <p>No records found.</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = filtered.map((r, i) => {
+      const d       = new Date(r.date + 'T00:00:00');
+      const dayName = d.toLocaleDateString('en-IN', { weekday:'long' });
+      const dateStr = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+      const timeHtml = r.status === 'present'
+        ? `<span style="font-family:'DM Mono',monospace;font-weight:600;color:var(--success)">${r.time ? fmt12h(r.time) : '—'}</span>`
+        : `<span style="color:var(--muted)">—</span>`;
+      // FIX: distinguish face recognition from manual mark using r.method field from backend
+      let methodLabel = '—';
+      if (r.status === 'present') {
+        if (r.method === 'manual') methodLabel = `<span class="method-chip">✏️ Manual</span>`;
+        else methodLabel = `<span class="method-chip">👤 Face Recognition</span>`;
+      }
+      return `<tr>
+        <td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:12px">${String(i + 1).padStart(2, '0')}</td>
+        <td style="font-weight:500">${dateStr}</td>
+        <td style="color:var(--muted)">${dayName}</td>
+        <td>${timeHtml}</td>
+        <td><span class="status-badge ${r.status}">${r.status === 'present' ? 'Present' : 'Absent'}</span></td>
+        <td>${methodLabel}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function setFilter(f) {
+    activeFilter = f;
+    document.getElementById('chipAll').className     = 'filter-chip' + (f === 'all'     ? ' active-all'     : '');
+    document.getElementById('chipPresent').className = 'filter-chip' + (f === 'present' ? ' active-present' : '');
+    document.getElementById('chipAbsent').className  = 'filter-chip' + (f === 'absent'  ? ' active-absent'  : '');
+    renderHistoryTable();
+  }
+
+  function applyFilters() { renderHistoryTable(); }
+
+  // ── LIVE POLL every 30s ──
+  function startLivePoll() {
+    setInterval(async () => {
+      try {
+        const res = await fetch('/api/student/attendance');
+        if (!res.ok) return;
+        const data = await res.json();
+        const changed =
+          data.student.present    !== STUDENT.present    ||
+          data.student.absent     !== STUDENT.absent     ||
+          data.student.percentage !== STUDENT.percentage ||
+          data.student.today      !== STUDENT.today      ||
+          data.records.length     !== RECORDS.length;
+        if (!changed) return;
+        Object.assign(STUDENT, data.student);
+        RECORDS.length = 0;
+        RECORDS.push(...data.records);
+        setupGreeting();
+        setupStats();
+        setupProgress();
+        renderDonut();
+        renderCalendar();
+        renderHistoryTable();
+        showToast('✓ Attendance updated!', 'success');
+      } catch(e) { /* silent */ }
+    }, 30000);
+  }
+
+  function scrollToSection(id) { document.getElementById(id)?.scrollIntoView({ behavior:'smooth', block:'start' }); }
+
+  function setupScrollSpy() {
+    window.addEventListener('scroll', () => {
+      const histTop = document.getElementById('historySection')?.getBoundingClientRect().top ?? 9999;
+      document.getElementById('tabOverview').classList.toggle('active', histTop >= 200);
+      document.getElementById('tabHistory').classList.toggle('active',  histTop < 200);
+    });
+  }
+
+  function pctClass(p) { return p >= 75 ? 'green' : p >= 50 ? 'yellow' : 'red'; }
+  function initials(n) { return n.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+
+  // FIX: handles HH:MM and HH:MM:SS correctly
+  function fmt12h(t) {
+    if (!t) return '—';
+    try {
+      const parts = t.split(':').map(Number);
+      const h = parts[0], m = parts[1];
+      return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+    } catch(e) { return t; }
+  }
+
+  function showToast(msg, type = '') {
+    const t = document.createElement('div');
+    t.className   = `toast ${type}`;
+    t.textContent = msg;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  /* ── PDF EXPORT ── */
+  function exportPDF() {
+    const btn = document.getElementById('btnExportPDF');
+    if (btn) { btn.textContent = 'Preparing...'; btn.disabled = true; }
+
+    const meta = document.getElementById('pdfHeaderMeta');
+    if (meta) {
+      meta.textContent =
+        'Student: ' + (STUDENT.full_name || '—') +
+        '   |   Generated: ' + new Date().toLocaleString('en-IN') +
+        '   |   Attendance: ' + (STUDENT.percentage || '—') + '%' +
+        '   |   Present: ' + (STUDENT.present || 0) + ' / ' + (STUDENT.total_days || 0) + ' days';
+    }
+
+    setTimeout(function() {
+      window.print();
+      setTimeout(function() {
+        if (btn) {
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Export PDF';
+          btn.disabled = false;
+        }
+      }, 1500);
+    }, 150);
+  }
+
+</script>
+</body>
+</html>

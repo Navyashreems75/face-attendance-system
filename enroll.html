@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Enroll Student — FaceAttend</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:      #1B4FD8;
+      --primary-lt:   rgba(27,79,216,0.12);
+      --primary-glow: rgba(27,79,216,0.35);
+      --bg:           #060C1A;
+      --surface:      rgba(255,255,255,0.04);
+      --surface-2:    rgba(255,255,255,0.07);
+      --border:       rgba(255,255,255,0.09);
+      --border-2:     rgba(255,255,255,0.14);
+      --text:         #F0F4FF;
+      --muted:        rgba(240,244,255,0.45);
+      --muted-2:      rgba(240,244,255,0.25);
+      --success:      #10B981;
+      --warning:      #F59E0B;
+      --danger:       #EF4444;
+    }
+
+    html { height: 100%; }
+    body {
+      min-height: 100%; font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND ── */
+    .bg-grid {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(27,79,216,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(27,79,216,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .bg-glow-tl {
+      position: fixed; width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(27,79,216,0.08) 0%, transparent 70%);
+      top: -200px; left: -200px; pointer-events: none; z-index: 0;
+    }
+    .bg-glow-br {
+      position: fixed; width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%);
+      bottom: -150px; right: -150px; pointer-events: none; z-index: 0;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(6,12,26,0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--primary-lt); border: 1px solid rgba(27,79,216,0.3);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .brand-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    .brand-tag  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .back-link {
+      display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted);
+      text-decoration: none; padding: 7px 14px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface);
+      transition: all 0.2s;
+    }
+    .back-link:hover { color: var(--text); border-color: var(--border-2); background: var(--surface-2); }
+
+    /* ── PAGE LAYOUT ── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 1040px; margin: 0 auto;
+      padding: 36px 32px 60px;
+    }
+
+    .page-header { margin-bottom: 32px; }
+    .page-title {
+      font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .page-title span { color: #6b9fff; }
+    .page-subtitle { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+    /* ── STEP TRACKER ── */
+    .steps {
+      display: flex; align-items: center; gap: 0; margin-bottom: 36px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 22px; overflow: hidden;
+    }
+    .step { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      color: var(--muted); transition: all 0.3s;
+    }
+    .step-label { font-size: 12.5px; color: var(--muted); font-weight: 500; transition: color 0.3s; }
+    .step.active .step-num  { background: var(--primary-lt); border-color: rgba(27,79,216,0.5); color: #6b9fff; }
+    .step.active .step-label { color: var(--text); }
+    .step.done .step-num   { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.45); color: var(--success); }
+    .step.done .step-label  { color: var(--muted); }
+    .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 6px; max-width: 40px; }
+
+    /* ── TWO-COL LAYOUT ── */
+    .layout { display: grid; grid-template-columns: 1fr 420px; gap: 22px; align-items: start; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 22px 24px; transition: border-color 0.3s;
+    }
+    .card:hover { border-color: var(--border-2); }
+    .card-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.09em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 18px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--primary); flex-shrink: 0;
+    }
+
+    /* ── FORM ── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 7px; }
+    .form-group label {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .form-group input, .form-group select {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 14px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.2s, background 0.2s;
+      width: 100%;
+    }
+    .form-group input::placeholder { color: var(--muted-2); }
+    .form-group input:focus { border-color: rgba(27,79,216,0.6); background: rgba(27,79,216,0.06); }
+    .form-group input.error { border-color: rgba(239,68,68,0.5); background: rgba(239,68,68,0.05); }
+    .form-group input.valid { border-color: rgba(16,185,129,0.45); }
+    .field-hint { font-size: 11px; color: var(--muted-2); margin-top: 3px; }
+    .field-err  { font-size: 11px; color: var(--danger); margin-top: 3px; display: none; }
+    .field-err.show { display: block; }
+
+    /* ── DIVIDER ── */
+    .or-divider {
+      display: flex; align-items: center; gap: 12px; margin: 18px 0;
+      font-size: 11px; color: var(--muted-2); letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .or-divider::before, .or-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── WEBCAM ── */
+    .webcam-wrap {
+      position: relative; border-radius: 14px; overflow: hidden;
+      background: #0a0f1e; border: 1px solid var(--border);
+      aspect-ratio: 4/3;
+    }
+    #videoEl {
+      width: 100%; height: 100%; object-fit: cover;
+      display: block; transform: scaleX(-1);
+    }
+    .webcam-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(6,12,26,0.7); backdrop-filter: blur(4px);
+      flex-direction: column; gap: 12px; transition: opacity 0.4s;
+    }
+    .webcam-overlay.hidden { opacity: 0; pointer-events: none; }
+    .webcam-overlay svg { color: rgba(107,159,255,0.4); }
+    .webcam-overlay p { font-size: 13px; color: var(--muted); text-align: center; }
+
+    /* Face guide box drawn over video */
+    .face-guide {
+      position: absolute;
+      top: 14%; left: 22%; width: 56%; height: 68%;
+      border: 1.5px dashed rgba(27,79,216,0.4);
+      border-radius: 8px; pointer-events: none;
+      transition: border-color 0.3s;
+    }
+    .face-guide.active { border-color: rgba(27,79,216,0.8); animation: guideGlow 2s ease-in-out infinite; }
+    .face-guide.captured { border-color: rgba(16,185,129,0.8); }
+    @keyframes guideGlow {
+      0%,100% { border-color: rgba(27,79,216,0.5); }
+      50%      { border-color: rgba(27,79,216,1); }
+    }
+
+    /* shutter flash */
+    .shutter-flash {
+      position: absolute; inset: 0; background: #fff;
+      opacity: 0; pointer-events: none; border-radius: 14px;
+      transition: opacity 0.05s;
+    }
+    .shutter-flash.active { opacity: 0.45; }
+
+    /* countdown badge */
+    .countdown-badge {
+      position: absolute; top: 10px; right: 12px;
+      background: rgba(6,12,26,0.8); border: 1px solid var(--border);
+      border-radius: 8px; padding: 4px 10px;
+      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted);
+      display: none;
+    }
+    .countdown-badge.show { display: block; }
+
+    /* ── WEBCAM CONTROLS ── */
+    .cam-controls { display: flex; gap: 10px; margin-top: 12px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 0 18px; height: 44px; border-radius: 10px; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--primary); color: #fff;
+      box-shadow: 0 4px 18px var(--primary-glow);
+    }
+    .btn-primary:hover:not(:disabled) { background: #2563EB; transform: translateY(-1px); box-shadow: 0 6px 22px var(--primary-glow); }
+    .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+    .btn-secondary {
+      background: var(--surface-2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--border-2); }
+    .btn-danger {
+      background: rgba(239,68,68,0.1); color: #F87171;
+      border: 1px solid rgba(239,68,68,0.25);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,0.2); }
+    .btn-success {
+      background: rgba(16,185,129,0.12); color: var(--success);
+      border: 1px solid rgba(16,185,129,0.3);
+    }
+    .btn-success:hover:not(:disabled) { background: rgba(16,185,129,0.22); }
+    .btn-full { width: 100%; }
+    .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ── CAPTURE COUNTER ── */
+    .capture-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    }
+    .capture-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .capture-badge {
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      padding: 3px 10px; border-radius: 20px;
+      background: rgba(27,79,216,0.12); border: 1px solid rgba(27,79,216,0.25);
+      color: #6b9fff;
+    }
+    .capture-badge.full { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: var(--success); }
+
+    /* ── PHOTO GRID ── */
+    .photo-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+      min-height: 70px;
+    }
+    .photo-slot {
+      aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+      border: 1.5px dashed rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.02);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; transition: border-color 0.3s;
+    }
+    .photo-slot.filled { border-color: rgba(27,79,216,0.4); border-style: solid; }
+    .photo-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-slot .slot-num {
+      font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.15);
+    }
+    .photo-slot .delete-btn {
+      position: absolute; top: 3px; right: 3px; width: 18px; height: 18px;
+      border-radius: 50%; background: rgba(239,68,68,0.85);
+      border: none; cursor: pointer; display: none;
+      align-items: center; justify-content: center; color: #fff;
+      font-size: 10px; line-height: 1;
+    }
+    .photo-slot:hover .delete-btn { display: flex; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap {
+      margin: 14px 0; display: none;
+    }
+    .progress-wrap.show { display: block; }
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .progress-label { font-size: 12px; color: var(--muted); }
+    .progress-pct   { font-family: 'DM Mono', monospace; font-size: 12px; color: #6b9fff; }
+    .progress-track {
+      height: 6px; background: rgba(255,255,255,0.06);
+      border-radius: 99px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      border-radius: 99px;
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 0 10px rgba(27,79,216,0.4);
+    }
+
+    /* ── DATASET MODE ── */
+    .dataset-box {
+      border: 1.5px dashed rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 20px; text-align: center;
+      background: rgba(255,255,255,0.02); cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .dataset-box:hover { border-color: rgba(27,79,216,0.4); background: rgba(27,79,216,0.04); }
+    .dataset-box p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .dataset-box strong { color: var(--text); font-weight: 600; }
+    .dataset-path {
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 6px; padding: 3px 8px; display: inline-block; margin-top: 6px;
+      color: #6b9fff;
+    }
+
+    /* ── TOAST ── */
+    .toast-wrap {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      z-index: 999; display: flex; flex-direction: column-reverse; gap: 10px; align-items: center;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 11px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      pointer-events: auto; white-space: nowrap;
+      animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    @keyframes toastIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes toastOut { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(12px)} }
+    .toast.success { background: linear-gradient(135deg,#064e3b,#065f46); border: 1px solid rgba(16,185,129,0.35); color: #6EE7B7; }
+    .toast.danger  { background: linear-gradient(135deg,#450a0a,#7f1d1d); border: 1px solid rgba(239,68,68,0.35); color: #FCA5A5; }
+    .toast.warning { background: linear-gradient(135deg,#451a03,#78350f); border: 1px solid rgba(245,158,11,0.35); color: #FDE68A; }
+    .toast.info    { background: linear-gradient(135deg,#0c1445,#1e3a8a); border: 1px solid rgba(27,79,216,0.35); color: #93C5FD; }
+    .toast svg     { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ── ENROLL BUTTON (big) ── */
+    .enroll-btn-wrap { margin-top: 18px; }
+    .btn-enroll {
+      width: 100%; height: 54px; border-radius: 14px;
+      background: linear-gradient(135deg, #1B4FD8, #2563EB); border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700; color: #fff;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      box-shadow: 0 6px 28px rgba(27,79,216,0.4);
+      transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    .btn-enroll::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+    .btn-enroll:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(27,79,216,0.5); }
+    .btn-enroll:active:not(:disabled) { transform: scale(0.99); }
+    .btn-enroll:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-enroll svg { width: 20px; height: 20px; }
+
+    /* ── REQUIREMENT LIST ── */
+    .req-list { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+    .req-item { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--muted); }
+    .req-dot {
+      width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .req-item.met .req-dot   { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); }
+    .req-item.unmet .req-dot { background: rgba(239,68,68,0.1);   border-color: rgba(239,68,68,0.3); }
+    .req-item.met   { color: var(--text); }
+
+    /* ── SUMMARY CARD ── */
+    .summary-preview {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+      padding: 14px 16px; border-radius: 12px;
+      background: rgba(27,79,216,0.06); border: 1px solid rgba(27,79,216,0.15);
+    }
+    .summary-avatar {
+      width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      border: 2px solid rgba(27,79,216,0.3);
+      background: rgba(27,79,216,0.15);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .summary-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .summary-avatar .initials {
+      font-size: 16px; font-weight: 700; color: #6b9fff;
+      font-family: 'DM Mono', monospace;
+    }
+    .summary-name  { font-size: 15px; font-weight: 600; line-height: 1.3; }
+    .summary-roll  { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+    /* ── HIDDEN CANVAS ── */
+    #canvasEl { display: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .page { padding: 24px 18px 48px; }
+      .steps { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow-tl"></div>
+<div class="bg-glow-br"></div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6b9fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">FaceAttend</div>
+      <div class="brand-tag">Student Enrollment</div>
+    </div>
+  </div>
+  <a href="/dashboard" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Dashboard
+  </a>
+</div>
+
+<div class="page">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-title">Enroll a <span>New Student</span></div>
+    <div class="page-subtitle">Capture 10 face photos to build a robust recognition profile.</div>
+  </div>
+
+  <!-- STEP TRACKER -->
+  <div class="steps">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-label">Student details</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-label">Capture photos</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-label">Confirm & enroll</div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: FORM + WEBCAM -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- DETAILS CARD -->
+      <div class="card">
+        <div class="card-title"><div class="card-title-dot"></div>Student Details</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="nameInput" placeholder="e.g. Sathvika Reddy" oninput="onFieldChange()"/>
+            <span class="field-err" id="nameErr">Name is required</span>
+          </div>
+          <div class="form-group">
+            <label>Roll Number</label>
+            <input type="text" id="rollInput" placeholder="e.g. 43" oninput="onFieldChange()"/>
+            <span class="field-err" id="rollErr">Roll number is required</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Section</label>
+            <input type="text" id="sectionInput" placeholder="e.g. A" oninput="onFieldChange()"/>
+          </div>
+          <div class="form-group">
+            <label>Department</label>
+            <input type="text" id="deptInput" placeholder="e.g. CSE" oninput="onFieldChange()"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- WEBCAM CARD -->
+      <div class="card">
+        <div class="card-title"><div class="card-title-dot" style="background:var(--success)"></div>Live Capture</div>
+
+        <div class="webcam-wrap" id="webcamWrap">
+          <video id="videoEl" autoplay muted playsinline></video>
+          <canvas id="canvasEl"></canvas>
+          <div class="face-guide" id="faceGuide"></div>
+          <div class="shutter-flash" id="shutterFlash"></div>
+          <div class="countdown-badge" id="countdownBadge"></div>
+
+          <!-- idle overlay -->
+          <div class="webcam-overlay" id="camOverlay">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <p>Camera inactive<br/>Press <strong style="color:rgba(240,244,255,0.7)">Start Camera</strong> to begin</p>
+          </div>
+        </div>
+
+        <div class="cam-controls">
+          <button class="btn btn-secondary" id="btnCamToggle" onclick="toggleCamera()" style="flex:1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            Start Camera
+          </button>
+          <button class="btn btn-primary" id="btnCapture" onclick="capturePhoto()" disabled style="flex:2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+            </svg>
+            Capture Photo
+          </button>
+          <button class="btn btn-danger" id="btnAutoCapture" onclick="toggleAutoCapture()" disabled title="Auto-capture 10 photos with countdown">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="or-divider">or load from disk</div>
+
+        <button class="btn btn-secondary btn-full" onclick="document.getElementById('fileInput').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+          </svg>
+          Load from Dataset Folder
+        </button>
+        <input type="file" id="fileInput" multiple accept="image/*" style="display:none" onchange="loadFiles(event)"/>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: PREVIEW + ENROLL -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- PHOTO PREVIEW CARD -->
+      <div class="card">
+        <div class="card-title"><div class="card-title-dot" style="background:var(--warning)"></div>Photo Preview</div>
+
+        <div class="capture-header">
+          <span class="capture-label">Captured photos</span>
+          <span class="capture-badge" id="countBadge">0 / 10</span>
+        </div>
+
+        <!-- 10-slot grid -->
+        <div class="photo-grid" id="photoGrid"></div>
+
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-header">
+            <span class="progress-label" id="progressLabel">Capturing...</span>
+            <span class="progress-pct" id="progressPct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn btn-danger" onclick="clearCaptures()" id="btnClear" style="flex:1" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+            </svg>
+            Clear All
+          </button>
+          <button class="btn btn-secondary" onclick="removeLastPhoto()" id="btnUndo" style="flex:1" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102 5.66"/>
+            </svg>
+            Undo Last
+          </button>
+        </div>
+      </div>
+
+      <!-- REQUIREMENTS + ENROLL CARD -->
+      <div class="card">
+        <div class="card-title"><div class="card-title-dot" style="background:#a78bfa"></div>Enrollment Checklist</div>
+
+        <!-- Student summary preview -->
+        <div class="summary-preview" id="summaryPreview">
+          <div class="summary-avatar" id="summaryAvatar">
+            <div class="initials" id="summaryInitials">—</div>
+          </div>
+          <div>
+            <div class="summary-name" id="summaryName">No name entered</div>
+            <div class="summary-roll" id="summaryRoll">Roll: —</div>
+          </div>
+        </div>
+
+        <div class="req-list">
+          <div class="req-item" id="req-name">
+            <div class="req-dot">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="req-name-ico"><circle cx="6" cy="6" r="3"/></svg>
+            </div>
+            Full name entered
+          </div>
+          <div class="req-item" id="req-roll">
+            <div class="req-dot">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="req-roll-ico"><circle cx="6" cy="6" r="3"/></svg>
+            </div>
+            Roll number entered
+          </div>
+          <div class="req-item" id="req-photos">
+            <div class="req-dot">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="req-photos-ico"><circle cx="6" cy="6" r="3"/></svg>
+            </div>
+            <span id="req-photos-label">At least 5 photos captured (0 / 10)</span>
+          </div>
+        </div>
+
+        <div class="enroll-btn-wrap">
+          <button class="btn-enroll" id="enrollBtn" onclick="enrollStudent()" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+            Enroll Student
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════
+   STATE
+═══════════════════════════ */
+var capturedImages = [];   // array of base64 jpeg strings
+var MAX_PHOTOS     = 10;
+var MIN_PHOTOS     = 5;
+var cameraActive   = false;
+var stream         = null;
+var autoTimer      = null;
+var autoRunning    = false;
+var autoCount      = 0;
+var AUTO_DELAY_MS  = 1500;
+
+/* ═══════════════════════════
+   DOM REFS
+═══════════════════════════ */
+var videoEl        = document.getElementById('videoEl');
+var canvasEl       = document.getElementById('canvasEl');
+var camOverlay     = document.getElementById('camOverlay');
+var faceGuide      = document.getElementById('faceGuide');
+var shutterFlash   = document.getElementById('shutterFlash');
+var countdownBadge = document.getElementById('countdownBadge');
+var photoGrid      = document.getElementById('photoGrid');
+var countBadge     = document.getElementById('countBadge');
+var progressWrap   = document.getElementById('progressWrap');
+var progressFill   = document.getElementById('progressFill');
+var progressPct    = document.getElementById('progressPct');
+var progressLabel  = document.getElementById('progressLabel');
+var enrollBtn      = document.getElementById('enrollBtn');
+var btnCapture     = document.getElementById('btnCapture');
+var btnAutoCapture = document.getElementById('btnAutoCapture');
+var btnClear       = document.getElementById('btnClear');
+var btnUndo        = document.getElementById('btnUndo');
+var btnCamToggle   = document.getElementById('btnCamToggle');
+var nameInput      = document.getElementById('nameInput');
+var rollInput      = document.getElementById('rollInput');
+
+/* ═══════════════════════════
+   INIT GRID SLOTS
+═══════════════════════════ */
+(function initGrid(){
+  for (var i=0;i<MAX_PHOTOS;i++){
+    var slot=document.createElement('div');
+    slot.className='photo-slot';
+    slot.id='slot-'+i;
+    slot.innerHTML='<span class="slot-num">'+(i+1)+'</span>';
+    photoGrid.appendChild(slot);
+  }
+})();
+
+/* ═══════════════════════════
+   CAMERA
+═══════════════════════════ */
+function toggleCamera(){
+  if(cameraActive){ stopCamera(); }
+  else { startCamera(); }
+}
+
+function startCamera(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    showToast('danger','Camera API not supported in this browser'); return;
+  }
+  navigator.mediaDevices.getUserMedia({
+    video:{width:{ideal:640},height:{ideal:480},facingMode:'user'}
+  }).then(function(s){
+    stream=s; videoEl.srcObject=s; cameraActive=true;
+    camOverlay.classList.add('hidden');
+    faceGuide.classList.add('active');
+    btnCamToggle.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/><line x1="1" y1="1" x2="23" y2="23" stroke-width="1.5"/></svg> Stop Camera';
+    btnCapture.disabled=false;
+    btnAutoCapture.disabled=false;
+    videoEl.onloadedmetadata=function(){
+      canvasEl.width=videoEl.videoWidth||640;
+      canvasEl.height=videoEl.videoHeight||480;
+    };
+    showToast('info','Camera started — position your face in the guide');
+    updateSteps();
+  }).catch(function(err){
+    showToast('danger','Camera access denied: '+err.message);
+  });
+}
+
+function stopCamera(){
+  if(stream){ stream.getTracks().forEach(function(t){t.stop();}); stream=null; }
+  videoEl.srcObject=null; cameraActive=false;
+  camOverlay.classList.remove('hidden');
+  faceGuide.classList.remove('active','captured');
+  btnCamToggle.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg> Start Camera';
+  btnCapture.disabled=true;
+  btnAutoCapture.disabled=true;
+  stopAutoCapture();
+}
+
+/* ═══════════════════════════
+   CAPTURE SINGLE PHOTO
+═══════════════════════════ */
+function capturePhoto(){
+  if(!cameraActive||capturedImages.length>=MAX_PHOTOS) return;
+  if(!videoEl.videoWidth){ showToast('warning','Camera not ready yet'); return; }
+
+  var w=canvasEl.width, h=canvasEl.height;
+  var ctx=canvasEl.getContext('2d');
+  // mirror to match video display
+  ctx.save(); ctx.setTransform(-1,0,0,1,w,0);
+  ctx.drawImage(videoEl,0,0,w,h);
+  ctx.restore();
+
+  var dataUrl=canvasEl.toDataURL('image/jpeg',0.85);
+  var b64=dataUrl.split(',')[1];
+  capturedImages.push(b64);
+
+  // shutter flash
+  shutterFlash.classList.add('active');
+  setTimeout(function(){shutterFlash.classList.remove('active');},120);
+
+  // face guide flash
+  faceGuide.classList.remove('active');
+  faceGuide.classList.add('captured');
+  setTimeout(function(){
+    faceGuide.classList.remove('captured');
+    if(capturedImages.length<MAX_PHOTOS) faceGuide.classList.add('active');
+  },400);
+
+  renderGrid();
+  updateAll();
+
+  if(capturedImages.length>=MAX_PHOTOS){
+    stopCamera();
+    showToast('success','All 10 photos captured! Ready to enroll.');
+  } else {
+    showToast('info','Photo '+(capturedImages.length)+' / '+MAX_PHOTOS+' captured');
+  }
+}
+
+/* ═══════════════════════════
+   AUTO CAPTURE (countdown)
+═══════════════════════════ */
+function toggleAutoCapture(){
+  if(autoRunning){ stopAutoCapture(); }
+  else { startAutoCapture(); }
+}
+
+function startAutoCapture(){
+  if(!cameraActive) return;
+  autoRunning=true;
+  autoCount=capturedImages.length;
+  btnAutoCapture.style.background='rgba(239,68,68,0.2)';
+  btnAutoCapture.title='Stop auto-capture';
+  runNextAutoCapture();
+}
+
+function runNextAutoCapture(){
+  if(!autoRunning||capturedImages.length>=MAX_PHOTOS){ stopAutoCapture(); return; }
+  var remaining=AUTO_DELAY_MS;
+  countdownBadge.classList.add('show');
+  var tick=setInterval(function(){
+    remaining-=200;
+    countdownBadge.textContent='Auto: '+(remaining/1000).toFixed(1)+'s';
+    if(remaining<=0){
+      clearInterval(tick);
+      if(autoRunning&&capturedImages.length<MAX_PHOTOS){
+        capturePhoto();
+        setTimeout(runNextAutoCapture,300);
+      } else {
+        stopAutoCapture();
+      }
+    }
+  },200);
+  autoTimer=tick;
+}
+
+function stopAutoCapture(){
+  clearInterval(autoTimer);
+  autoRunning=false;
+  countdownBadge.classList.remove('show');
+  btnAutoCapture.style.background='';
+  btnAutoCapture.title='Auto-capture 10 photos';
+}
+
+/* ═══════════════════════════
+   LOAD FROM FILES
+═══════════════════════════ */
+function loadFiles(evt){
+  var files=Array.from(evt.target.files);
+  if(!files.length) return;
+  var toLoad=Math.min(files.length, MAX_PHOTOS-capturedImages.length);
+  if(toLoad<=0){ showToast('warning','Already at maximum (10 photos)'); return; }
+
+  var loaded=0;
+  files.slice(0,toLoad).forEach(function(file){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var b64=e.target.result.split(',')[1];
+      capturedImages.push(b64);
+      loaded++;
+      if(loaded===toLoad){
+        renderGrid(); updateAll();
+        showToast('success','Loaded '+toLoad+' photo'+(toLoad>1?'s':'')+' from disk');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  evt.target.value='';
+}
+
+/* ═══════════════════════════
+   CLEAR / UNDO
+═══════════════════════════ */
+function clearCaptures(){
+  if(!capturedImages.length) return;
+  capturedImages=[];
+  renderGrid(); updateAll();
+  showToast('info','All photos cleared');
+}
+
+function removeLastPhoto(){
+  if(!capturedImages.length) return;
+  capturedImages.pop();
+  renderGrid(); updateAll();
+  showToast('info','Last photo removed');
+}
+
+function deletePhoto(idx){
+  capturedImages.splice(idx,1);
+  renderGrid(); updateAll();
+}
+
+/* ═══════════════════════════
+   RENDER GRID
+═══════════════════════════ */
+function renderGrid(){
+  for(var i=0;i<MAX_PHOTOS;i++){
+    var slot=document.getElementById('slot-'+i);
+    if(i<capturedImages.length){
+      var idx=i; // closure
+      (function(slotEl, slotIdx){
+        slotEl.className='photo-slot filled';
+        slotEl.innerHTML='<img src="data:image/jpeg;base64,'+capturedImages[slotIdx]+'" alt="Photo '+(slotIdx+1)+'"/>'
+          +'<button class="delete-btn" onclick="deletePhoto('+slotIdx+')" title="Remove">✕</button>';
+      })(slot,i);
+    } else {
+      slot.className='photo-slot';
+      slot.innerHTML='<span class="slot-num">'+(i+1)+'</span>';
+    }
+  }
+}
+
+/* ═══════════════════════════
+   UPDATE ALL UI
+═══════════════════════════ */
+function updateAll(){
+  var count=capturedImages.length;
+  var pct=Math.round((count/MAX_PHOTOS)*100);
+
+  // count badge
+  countBadge.textContent=count+' / '+MAX_PHOTOS;
+  countBadge.className='capture-badge'+(count>=MAX_PHOTOS?' full':'');
+
+  // progress bar
+  if(count>0){
+    progressWrap.classList.add('show');
+    progressFill.style.width=pct+'%';
+    progressPct.textContent=pct+'%';
+    progressLabel.textContent=count>=MAX_PHOTOS?'Complete — ready to enroll':'Capturing...';
+  } else {
+    progressWrap.classList.remove('show');
+    progressFill.style.width='0%';
+  }
+
+  // buttons
+  btnClear.disabled=count===0;
+  btnUndo.disabled=count===0;
+  if(count>=MAX_PHOTOS){ btnCapture.disabled=true; btnAutoCapture.disabled=true; }
+  else if(cameraActive){ btnCapture.disabled=false; btnAutoCapture.disabled=false; }
+
+  // summary avatar — use first captured photo
+  var summaryAvatar=document.getElementById('summaryAvatar');
+  var summaryInitials=document.getElementById('summaryInitials');
+  if(count>0){
+    summaryAvatar.innerHTML='<img src="data:image/jpeg;base64,'+capturedImages[0]+'" alt="preview"/>';
+  } else {
+    var name=(nameInput.value||'').trim();
+    var initials=name?name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2):'—';
+    summaryAvatar.innerHTML='<div class="initials">'+initials+'</div>';
+  }
+
+  updateRequirements();
+}
+
+/* ═══════════════════════════
+   FIELD CHANGE
+═══════════════════════════ */
+function onFieldChange(){
+  var name=(nameInput.value||'').trim();
+  var roll=(rollInput.value||'').trim();
+
+  // summary
+  document.getElementById('summaryName').textContent=name||'No name entered';
+  document.getElementById('summaryRoll').textContent='Roll: '+(roll||'—');
+  // initials in avatar (only if no photo)
+  if(!capturedImages.length){
+    var initials=name?name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2):'—';
+    document.getElementById('summaryAvatar').innerHTML='<div class="initials">'+initials+'</div>';
+  }
+
+  // clear error style on edit
+  nameInput.classList.remove('error');
+  rollInput.classList.remove('error');
+
+  updateRequirements();
+  updateSteps();
+}
+
+/* ═══════════════════════════
+   REQUIREMENTS
+═══════════════════════════ */
+function updateRequirements(){
+  var name=(nameInput.value||'').trim();
+  var roll=(rollInput.value||'').trim();
+  var count=capturedImages.length;
+  var photosOk=count>=MIN_PHOTOS;
+
+  setReq('req-name', !!name);
+  setReq('req-roll', !!roll);
+  setReq('req-photos', photosOk);
+  document.getElementById('req-photos-label').textContent=
+    'At least 5 photos captured ('+count+' / '+MAX_PHOTOS+')';
+
+  enrollBtn.disabled=!(name&&roll&&photosOk);
+}
+
+function setReq(id, met){
+  var el=document.getElementById(id);
+  el.className='req-item '+(met?'met':'unmet');
+  var ico=el.querySelector('svg');
+  if(met){ ico.innerHTML='<polyline points="2 6 5 10 10 2" stroke-width="2.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'; }
+  else    { ico.innerHTML='<line x1="2" y1="2" x2="10" y2="10" stroke-width="2.5" stroke="currentColor" stroke-linecap="round"/><line x1="10" y1="2" x2="2" y2="10" stroke-width="2.5" stroke="currentColor" stroke-linecap="round"/>'; }
+}
+
+/* ═══════════════════════════
+   STEPS
+═══════════════════════════ */
+function updateSteps(){
+  var name=(nameInput.value||'').trim();
+  var roll=(rollInput.value||'').trim();
+  var count=capturedImages.length;
+
+  var s1=document.getElementById('step1');
+  var s2=document.getElementById('step2');
+  var s3=document.getElementById('step3');
+
+  if(name&&roll){ s1.className='step done'; } else { s1.className='step active'; }
+
+  if(count>=MIN_PHOTOS){ s2.className='step done'; }
+  else if(cameraActive||count>0){ s2.className='step active'; }
+  else { s2.className='step'; }
+
+  if(name&&roll&&count>=MIN_PHOTOS){ s3.className='step active'; }
+  else { s3.className='step'; }
+}
+
+/* ═══════════════════════════
+   ENROLL
+═══════════════════════════ */
+function enrollStudent(){
+  var name=(nameInput.value||'').trim();
+  var roll=(rollInput.value||'').trim();
+  var section=(document.getElementById('sectionInput').value||'').trim();
+  var dept=(document.getElementById('deptInput').value||'').trim();
+
+  // Validate
+  var valid=true;
+  if(!name){
+    nameInput.classList.add('error');
+    document.getElementById('nameErr').classList.add('show');
+    valid=false;
+  }
+  if(!roll){
+    rollInput.classList.add('error');
+    document.getElementById('rollErr').classList.add('show');
+    valid=false;
+  }
+  if(capturedImages.length<MIN_PHOTOS){
+    showToast('warning','Need at least '+MIN_PHOTOS+' photos (have '+capturedImages.length+')');
+    valid=false;
+  }
+  if(!valid) return;
+
+  enrollBtn.disabled=true;
+  enrollBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Enrolling...';
+  progressWrap.classList.add('show');
+  progressLabel.textContent='Sending to server...';
+
+  // Build folder name: Name_Roll (matches captureFaces.py convention)
+  var folderName=name.replace(/\s+/g,'_')+'_'+roll;
+
+  // FIX: was '/enroll' — that's the GET route that serves this page.
+  // The correct POST endpoint is '/api/enroll' which is auth-protected
+  // and proxies to api.py on port 5001.
+  fetch('/api/enroll', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:      folderName,
+      roll:      roll,
+      section:   section,
+      dept:      dept,
+      images:    capturedImages
+    })
+  })
+  .then(function(res){
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return res.json();
+  })
+  .then(function(data){
+    progressFill.style.width='100%';
+    progressPct.textContent='100%';
+    progressLabel.textContent='Enrolled successfully!';
+    showToast('success',name+' enrolled with '+capturedImages.length+' photos!');
+    document.getElementById('step3').className='step done';
+    enrollBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><polyline points="20 6 9 17 4 12"/></svg> Enrolled!';
+    enrollBtn.style.background='linear-gradient(135deg,#064e3b,#10b981)';
+    enrollBtn.style.boxShadow='0 6px 28px rgba(16,185,129,0.35)';
+    stopCamera();
+    setTimeout(function(){
+      if(data.redirect){ window.location.href=data.redirect; }
+    },2000);
+  })
+  .catch(function(err){
+    enrollBtn.disabled=false;
+    enrollBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg> Enroll Student';
+    showToast('danger','Enrollment failed: '+err.message);
+    progressLabel.textContent='Enrollment failed';
+  });
+}
+
+/* ═══════════════════════════
+   TOAST
+═══════════════════════════ */
+var toastWrap=document.getElementById('toastWrap');
+var toastQueue=[];
+function showToast(type,msg){
+  var icons={
+    success:'<polyline points="20 6 9 17 4 12"/>',
+    danger: '<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    warning:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+    info:   '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
+  };
+  var el=document.createElement('div');
+  el.className='toast '+type;
+  el.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'+icons[type]+'</svg>'+msg;
+  toastWrap.appendChild(el);
+  setTimeout(function(){
+    el.style.animation='toastOut 0.3s ease forwards';
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },300);
+  },3200);
+}
+
+/* ═══════════════════════════
+   KEYBOARD SHORTCUT
+═══════════════════════════ */
+document.addEventListener('keydown',function(e){
+  if(e.key===' '&&e.target.tagName!=='INPUT'){
+    e.preventDefault(); if(cameraActive&&capturedImages.length<MAX_PHOTOS) capturePhoto();
+  }
+});
+
+/* INIT */
+updateAll();
+updateSteps();
+</script>
+</body>
+</html>

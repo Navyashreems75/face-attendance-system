@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register — FaceAttend</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:        #1B4FD8;
+      --primary-hover:  #1640b0;
+      --primary-light:  #EEF2FF;
+      --bg:             #F4F6F9;
+      --surface:        #FFFFFF;
+      --border:         #E2E8F0;
+      --text:           #0F172A;
+      --muted:          #64748B;
+      --error:          #DC2626;
+      --error-bg:       #FEF2F2;
+      --error-border:   #FECACA;
+      --success:        #059669;
+      --success-bg:     #ECFDF5;
+      --success-border: #A7F3D0;
+      --purple:         #7C3AED;
+      --radius:         10px;
+      --radius-lg:      14px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* ── Outer card ── */
+    .wrapper {
+      display: flex;
+      width: 100%;
+      max-width: 960px;
+      min-height: 580px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 4px 32px rgba(27,79,216,0.10), 0 1px 4px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+
+    /* ════════════════════════
+       LEFT PANEL  — identical to login.html
+    ════════════════════════ */
+    .panel-left {
+      width: 340px;
+      flex-shrink: 0;
+      background: linear-gradient(155deg, #1B4FD8 0%, #1e3a8a 100%);
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel-left::before {
+      content: '';
+      position: absolute; top: -80px; right: -80px;
+      width: 240px; height: 240px; border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      pointer-events: none;
+    }
+    .panel-left::after {
+      content: '';
+      position: absolute; bottom: -50px; left: -50px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      pointer-events: none;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      position: relative;
+      z-index: 1;
+    }
+    .brand-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .brand-texts { display: flex; flex-direction: column; }
+    .brand-name  { font-size: 17px; font-weight: 700; color: #fff; line-height: 1.2; }
+    .brand-sub   {
+      font-size: 10.5px; color: rgba(255,255,255,0.5);
+      letter-spacing: 0.6px; text-transform: uppercase;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .panel-left-body { position: relative; z-index: 1; }
+    .panel-left-body h1 {
+      font-size: 26px; font-weight: 700; color: #fff;
+      line-height: 1.25; margin-bottom: 10px;
+    }
+    .panel-left-body p {
+      font-size: 13.5px; color: rgba(255,255,255,0.65); line-height: 1.65;
+    }
+
+    .steps { margin-top: 1.75rem; display: flex; flex-direction: column; position: relative; z-index: 1; }
+    .step  { display: flex; align-items: flex-start; gap: 12px; }
+    .step-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.65);
+      font-family: 'DM Mono', monospace;
+    }
+    .step-num.active { background: #fff; color: var(--primary); }
+    .step-line { width: 1px; height: 26px; background: rgba(255,255,255,0.14); margin: 3px 0; }
+    .step-text { padding-top: 3px; padding-bottom: 6px; }
+    .step-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.88); }
+    .step-sub   { font-size: 11.5px; color: rgba(255,255,255,0.42); margin-top: 2px; line-height: 1.5; }
+
+    .panel-left-footer { font-size: 11.5px; color: rgba(255,255,255,0.3); position: relative; z-index: 1; }
+
+    /* ════════════════════════
+       RIGHT PANEL
+    ════════════════════════ */
+    .panel-right {
+      flex: 1;
+      padding: 2.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .panel-right h2 { font-size: 21px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .panel-right .sub { font-size: 14px; color: var(--muted); margin-bottom: 1.4rem; }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 10px 14px; border-radius: 8px;
+      font-size: 13px; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 8px; font-weight: 500;
+    }
+    .alert-icon {
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .alert.error   { background: var(--error-bg);   color: var(--error);   border: 1px solid var(--error-border); }
+    .alert.error   .alert-icon { background: var(--error);   color: #fff; }
+    .alert.success { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+    .alert.success .alert-icon { background: var(--success); color: #fff; }
+
+    /* ── Two-column row ── */
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* ── Form groups ── */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+    label .opt { font-weight: 400; color: var(--muted); font-size: 12px; }
+
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: #CBD5E1; pointer-events: none; display: flex;
+      transition: color 0.15s;
+    }
+    .input-wrap:focus-within .input-icon { color: var(--primary); }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%; padding: 10px 13px 10px 38px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+      background: var(--surface); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      appearance: none;
+    }
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(27,79,216,0.09);
+    }
+    input::placeholder { color: #CBD5E1; }
+
+    /* password toggle */
+    .pw-wrap input { padding-right: 40px; }
+    .pw-toggle {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: #CBD5E1; padding: 4px; display: flex; align-items: center;
+      transition: color 0.15s;
+    }
+    .pw-toggle:hover { color: var(--muted); }
+
+    /* ── Role pills ── */
+    .role-label { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 8px; display: block; }
+    .role-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+    .role-pill input[type="radio"] { display: none; }
+    .role-pill label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 12px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      background: var(--bg);
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      user-select: none;
+    }
+    .role-pill label:hover { border-color: #93c5fd; background: #eff6ff; }
+    .role-pill input:checked + label {
+      border-color: var(--primary);
+      background: #eff6ff;
+      box-shadow: 0 0 0 3px rgba(27,79,216,0.09);
+    }
+    .pill-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pill-icon.student { background: #dbeafe; color: var(--primary); }
+    .pill-icon.teacher { background: #ede9fe; color: var(--purple); }
+    .pill-icon.admin   { background: #dcfce7; color: var(--success); }
+    .pill-label { font-size: 12.5px; font-weight: 600; color: var(--text); }
+
+    /* ── Submit ── */
+    .btn {
+      width: 100%; padding: 11px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+      cursor: pointer; margin-top: 0.25rem;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn:hover  { background: var(--primary-hover); }
+    .btn:active { transform: scale(0.99); }
+    .btn.loading { background: var(--primary-hover); pointer-events: none; }
+    .spinner {
+      width: 15px; height: 15px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .btn.loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    .form-footer { text-align: center; margin-top: 1.25rem; font-size: 13px; color: var(--muted); }
+    .form-footer a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .form-footer a:hover { text-decoration: underline; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fu { opacity: 0; animation: fadeUp 0.4s ease forwards; }
+    .fu-1 { animation-delay: 0.05s; }
+    .fu-2 { animation-delay: 0.11s; }
+    .fu-3 { animation-delay: 0.17s; }
+    .fu-4 { animation-delay: 0.23s; }
+    .fu-5 { animation-delay: 0.29s; }
+    .fu-6 { animation-delay: 0.35s; }
+    .fu-7 { animation-delay: 0.41s; }
+
+    @media (max-width: 700px) {
+      .panel-left { display: none; }
+      .panel-right { padding: 2rem 1.5rem; }
+      .field-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ══════════════ LEFT PANEL — same as login.html ══════════════ -->
+  <div class="panel-left">
+
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-texts">
+        <div class="brand-name">FaceAttend</div>
+        <div class="brand-sub">AI Attendance</div>
+      </div>
+    </div>
+
+    <div class="panel-left-body">
+      <h1>Create your<br/>account</h1>
+      <p>Set up your profile to access the attendance system. Your role determines what you can see and do.</p>
+
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-left">
+            <div class="step-num active">1</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-text">
+            <div class="step-title">Create account</div>
+            <div class="step-sub">Fill in your details and choose a role</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-left">
+            <div class="step-num">2</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-text">
+            <div class="step-title">Enroll your face</div>
+            <div class="step-sub">Capture 10 photos for recognition</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-left">
+            <div class="step-num">3</div>
+          </div>
+          <div class="step-text">
+            <div class="step-title">Mark attendance</div>
+            <div class="step-sub">Use the kiosk or dashboard</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="panel-left-footer">© 2026 FaceAttend · All rights reserved</div>
+  </div>
+
+  <!-- ══════════════ RIGHT PANEL ══════════════ -->
+  <div class="panel-right">
+
+    <h2 class="fu fu-1">Welcome</h2>
+    <p class="sub fu fu-2">Create a new account to get started</p>
+
+    <!-- Flask flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert {{ category }} fu fu-2">
+          <span class="alert-icon">{% if category == 'error' %}!{% else %}✓{% endif %}</span>
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endwith %}
+
+    <!-- Direct error passing -->
+    {% if error %}
+      <div class="alert error fu fu-2">
+        <span class="alert-icon">!</span>
+        {{ error }}
+      </div>
+    {% endif %}
+
+    <form method="POST" action="/register" autocomplete="off">
+
+      <!-- Full Name -->
+      <div class="form-group fu fu-3">
+        <label for="full_name">Full Name</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z"/>
+            </svg>
+          </span>
+          <input type="text" id="full_name" name="full_name"
+                 placeholder="e.g. Navya Shree"
+                 value="{{ request.form.get('full_name', '') }}"
+                 required />
+        </div>
+      </div>
+
+      <!-- Username + Email (side by side) -->
+      <div class="field-row fu fu-3">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M14.243 5.757a6 6 0 10-.986 9.284 1 1 0 111.087 1.678A8 8 0 1118 10a3 3 0 01-4.8 2.401A4 4 0 1114 10a1 1 0 102 0c0-1.537-.586-3.07-1.757-4.243zM12 10a2 2 0 10-4 0 2 2 0 004 0z" clip-rule="evenodd"/>
+              </svg>
+            </span>
+            <input type="text" id="username" name="username"
+                   placeholder="your_username"
+                   value="{{ request.form.get('username', '') }}"
+                   required autocomplete="off" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">Email <span class="opt">(optional)</span></label>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+              </svg>
+            </span>
+            <input type="email" id="email" name="email"
+                   placeholder="you@example.com"
+                   value="{{ request.form.get('email', '') }}" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group fu fu-4">
+        <label for="password">Password</label>
+        <div class="input-wrap pw-wrap">
+          <span class="input-icon">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
+            </svg>
+          </span>
+          <input type="password" id="password" name="password"
+                 placeholder="Min. 8 characters"
+                 required autocomplete="new-password" />
+          <button type="button" class="pw-toggle" onclick="togglePw('password','eye1a','eye1b')" tabindex="-1">
+            <svg id="eye1a" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"/>
+              <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+            </svg>
+            <svg id="eye1b" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="display:none">
+              <path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/>
+              <path d="M10.748 13.93l2.523 2.524a10.065 10.065 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group fu fu-4">
+        <label for="confirm_password">Confirm Password</label>
+        <div class="input-wrap pw-wrap">
+          <span class="input-icon">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
+            </svg>
+          </span>
+          <input type="password" id="confirm_password" name="confirm_password"
+                 placeholder="Repeat your password"
+                 required autocomplete="new-password" />
+          <button type="button" class="pw-toggle" onclick="togglePw('confirm_password','eye2a','eye2b')" tabindex="-1">
+            <svg id="eye2a" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"/>
+              <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+            </svg>
+            <svg id="eye2b" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="display:none">
+              <path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38 1.651 1.651 0 000-1.185A10.004 10.004 0 009.999 3a9.956 9.956 0 00-4.744 1.194L3.28 2.22zM7.752 6.69l1.092 1.092a2.5 2.5 0 013.374 3.373l1.091 1.092a4 4 0 00-5.557-5.557z" clip-rule="evenodd"/>
+              <path d="M10.748 13.93l2.523 2.524a10.065 10.065 0 01-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 010-1.186A10.007 10.007 0 012.839 6.02L6.07 9.252a4 4 0 004.678 4.678z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Role selection -->
+      <div class="fu fu-5">
+        <span class="role-label">Role</span>
+        <div class="role-group">
+
+          <div class="role-pill">
+            <input type="radio" id="role_student" name="role" value="student"
+              {% if request.form.get('role', 'student') == 'student' %}checked{% endif %} />
+            <label for="role_student">
+              <div class="pill-icon student">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zm5.99 7.176A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                </svg>
+              </div>
+              <span class="pill-label">Student</span>
+            </label>
+          </div>
+
+          <div class="role-pill">
+            <input type="radio" id="role_teacher" name="role" value="teacher"
+              {% if request.form.get('role') == 'teacher' %}checked{% endif %} />
+            <label for="role_teacher">
+              <div class="pill-icon teacher">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                  <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15a24.98 24.98 0 01-8-1.308z"/>
+                </svg>
+              </div>
+              <span class="pill-label">Teacher</span>
+            </label>
+          </div>
+
+          <div class="role-pill">
+            <input type="radio" id="role_admin" name="role" value="admin"
+              {% if request.form.get('role') == 'admin' %}checked{% endif %} />
+            <label for="role_admin">
+              <div class="pill-icon admin">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <span class="pill-label">Admin</span>
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <button type="submit" class="btn fu fu-6" id="reg-btn">
+        <div class="spinner"></div>
+        <span class="btn-label">Create Account</span>
+      </button>
+
+    </form>
+
+    <p class="form-footer fu fu-7">
+      Already have an account? <a href="/login">Sign in</a>
+    </p>
+
+  </div>
+</div>
+
+<script>
+  // Password show/hide toggle (same pattern as login.html)
+  function togglePw(inputId, showId, hideId) {
+    var inp  = document.getElementById(inputId);
+    var show = document.getElementById(showId);
+    var hide = document.getElementById(hideId);
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      show.style.display = 'none';
+      hide.style.display = '';
+    } else {
+      inp.type = 'password';
+      show.style.display = '';
+      hide.style.display = 'none';
+    }
+  }
+
+  // Loading state on submit
+  document.querySelector('form').addEventListener('submit', function () {
+    var btn = document.getElementById('reg-btn');
+    btn.classList.add('loading');
+    btn.querySelector('.btn-label').textContent = 'Creating account...';
+  });
+</script>
+</body>
+</html>

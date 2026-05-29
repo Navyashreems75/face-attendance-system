@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teacher Dashboard — FaceAttend</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:#1B4FD8; --primary-light:#EEF2FF; --primary-mid:#C7D2FE;
+      --bg:#F4F6F9; --surface:#FFFFFF; --border:#E2E8F0;
+      --text:#0F172A; --muted:#64748B;
+      --success:#059669; --success-bg:#ECFDF5;
+      --warning:#D97706; --warning-bg:#FFFBEB;
+      --danger:#DC2626;  --danger-bg:#FEF2F2;
+      --sidebar-w:260px; --radius:12px;
+      --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.04);
+      --shadow-md:0 4px 6px rgba(0,0,0,0.07),0 10px 30px rgba(0,0,0,0.07);
+    }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
+
+    /* SIDEBAR */
+    .sidebar { width:var(--sidebar-w); min-height:100vh; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; position:fixed; top:0; left:0; z-index:100; }
+    .sidebar-brand { padding:24px 20px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+    .brand-icon { width:38px; height:38px; background:var(--primary); border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .brand-icon svg { width:20px; height:20px; fill:white; }
+    .brand-text span:first-child { display:block; font-size:15px; font-weight:700; color:var(--text); letter-spacing:-0.3px; }
+    .brand-text span:last-child  { display:block; font-size:11px; color:var(--muted); margin-top:2px; }
+    .sidebar-teacher-info { padding:18px 20px; border-bottom:1px solid var(--border); }
+    .teacher-avatar { width:44px; height:44px; background:var(--primary-light); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:var(--primary); margin-bottom:10px; }
+    .teacher-name { font-size:14px; font-weight:600; color:var(--text); }
+    .teacher-role { font-size:12px; color:var(--muted); margin-top:2px; }
+    .sidebar-nav { flex:1; padding:12px; display:flex; flex-direction:column; gap:2px; }
+    .nav-section-label { font-size:10px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; color:var(--muted); padding:10px 8px 6px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:var(--muted); font-size:14px; font-weight:500; cursor:pointer; transition:all 0.15s; border:none; background:none; width:100%; text-align:left; }
+    .nav-item:hover { background:var(--bg); color:var(--text); }
+    .nav-item.active { background:var(--primary-light); color:var(--primary); }
+    .nav-item svg { width:18px; height:18px; flex-shrink:0; opacity:0.7; }
+    .nav-item.active svg,.nav-item:hover svg { opacity:1; }
+    .nav-badge { margin-left:auto; background:var(--danger); color:white; font-size:10px; font-weight:700; padding:2px 6px; border-radius:20px; min-width:18px; text-align:center; }
+    .sidebar-footer { padding:12px; border-top:1px solid var(--border); }
+
+    /* MAIN */
+    .main { margin-left:var(--sidebar-w); flex:1; min-height:100vh; display:flex; flex-direction:column; }
+    .topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar-left h1 { font-size:18px; font-weight:700; color:var(--text); letter-spacing:-0.3px; }
+    .topbar-left p  { font-size:13px; color:var(--muted); margin-top:1px; }
+    .topbar-right { display:flex; align-items:center; gap:12px; }
+    .date-badge { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:6px 12px; font-size:13px; color:var(--muted); font-weight:500; }
+    .live-dot { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--success); font-weight:600; }
+    .live-dot::before { content:''; width:7px; height:7px; background:var(--success); border-radius:50%; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+    .page-body { padding:28px 32px; display:flex; flex-direction:column; gap:24px; }
+
+    /* GREETING */
+    .greeting-banner { background:linear-gradient(135deg,var(--primary) 0%,#3B6FE8 100%); border-radius:var(--radius); padding:24px 28px; color:white; display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden; }
+    .greeting-banner::after  { content:''; position:absolute; right:-30px; top:-40px; width:180px; height:180px; background:rgba(255,255,255,0.06); border-radius:50%; }
+    .greeting-banner::before { content:''; position:absolute; right:60px; bottom:-50px; width:120px; height:120px; background:rgba(255,255,255,0.04); border-radius:50%; }
+    .greeting-text h2 { font-size:22px; font-weight:700; letter-spacing:-0.4px; }
+    .greeting-text p  { font-size:14px; opacity:0.8; margin-top:4px; }
+    .greeting-meta { text-align:right; font-size:13px; opacity:0.75; line-height:1.6; }
+
+    /* STATS */
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); transition:transform 0.2s,box-shadow 0.2s; }
+    .stat-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+    .stat-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+    .stat-icon svg { width:20px; height:20px; }
+    .stat-icon.blue   { background:var(--primary-light); color:var(--primary); }
+    .stat-icon.green  { background:var(--success-bg);    color:var(--success); }
+    .stat-icon.yellow { background:var(--warning-bg);    color:var(--warning); }
+    .stat-icon.red    { background:var(--danger-bg);     color:var(--danger);  }
+    .stat-value { font-size:28px; font-weight:700; letter-spacing:-1px; color:var(--text); font-family:'DM Mono',monospace; }
+    .stat-label { font-size:12px; color:var(--muted); font-weight:500; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+    .stat-sub   { font-size:12px; color:var(--muted); margin-top:6px; }
+
+    /* STUDENT CARDS */
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .section-title  { font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.3px; }
+    .section-sub    { font-size:13px; color:var(--muted); margin-top:2px; }
+    .student-cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+    .student-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); cursor:pointer; transition:all 0.2s; }
+    .student-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); border-color:var(--primary-mid); }
+    .student-card.at-risk { border-left:3px solid var(--danger); }
+
+    /* AVATARS — colored initials circles */
+    .student-card-avatar {
+      width:42px; height:42px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      margin-bottom:10px; flex-shrink:0; overflow:hidden;
+    }
+    .avatar-sm {
+      width:32px; height:32px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; overflow:hidden;
+    }
+    .sc-avatar {
+      width:52px; height:52px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; overflow:hidden;
+    }
+
+    .student-card-name { font-size:14px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .student-card-pct { font-size:22px; font-weight:700; font-family:'DM Mono',monospace; margin-top:8px; letter-spacing:-0.5px; }
+    .student-card-pct.green  { color:var(--success); }
+    .student-card-pct.yellow { color:var(--warning); }
+    .student-card-pct.red    { color:var(--danger);  }
+    .student-card-meta { font-size:11px; color:var(--muted); margin-top:3px; }
+    .mini-bar { height:4px; background:var(--border); border-radius:99px; margin-top:10px; overflow:hidden; }
+    .mini-bar-fill { height:100%; border-radius:99px; transition:width 0.6s; }
+    .mini-bar-fill.green  { background:var(--success); }
+    .mini-bar-fill.yellow { background:var(--warning); }
+    .mini-bar-fill.red    { background:var(--danger);  }
+
+    /* TABLE */
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .card-header { padding:18px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .card-header-left h3 { font-size:15px; font-weight:700; }
+    .card-header-left p  { font-size:12px; color:var(--muted); margin-top:2px; }
+    .card-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .input-group { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:7px 12px; }
+    .input-group svg { width:15px; height:15px; color:var(--muted); flex-shrink:0; }
+    .input-group input { border:none; background:none; outline:none; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); min-width:0; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:'DM Sans',sans-serif; transition:all 0.15s; text-decoration:none; }
+    .btn svg { width:14px; height:14px; }
+    .btn-primary { background:var(--primary); color:white; }
+    .btn-primary:hover { background:#1640B8; }
+    .btn-outline { background:var(--surface); border:1px solid var(--border); color:var(--text); }
+    .btn-outline:hover { background:var(--bg); }
+    table { width:100%; border-collapse:collapse; }
+    thead th { padding:11px 16px; text-align:left; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; background:var(--bg); border-bottom:1px solid var(--border); }
+    tbody tr { border-bottom:1px solid var(--border); transition:background 0.12s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:#FAFBFD; }
+    tbody td { padding:13px 16px; font-size:13px; vertical-align:middle; }
+    .student-name-cell { display:flex; align-items:center; gap:10px; }
+    .avatar-sm { width:32px; height:32px; border-radius:50%; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
+    .pct-badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; font-family:'DM Mono',monospace; }
+    .pct-badge.green  { background:var(--success-bg); color:var(--success); }
+    .pct-badge.yellow { background:var(--warning-bg); color:var(--warning); }
+    .pct-badge.red    { background:var(--danger-bg);  color:var(--danger);  }
+    .today-status { display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:500; padding:3px 10px; border-radius:20px; }
+    .today-status.present { background:var(--success-bg); color:var(--success); }
+    .today-status.absent  { background:var(--danger-bg);  color:var(--danger);  }
+    .today-status.unknown { background:var(--bg); color:var(--muted); }
+    .name-link { cursor:pointer; color:var(--primary); font-weight:600; border-bottom:1px dashed var(--primary-mid); transition:border-color 0.15s; }
+    .name-link:hover { border-bottom-color:var(--primary); }
+
+    /* MANUAL MARK MODAL */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface); border-radius:16px; width:440px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.15); animation:modalIn 0.2s ease; }
+    @keyframes modalIn { from{opacity:0;transform:translateY(12px) scale(0.97)} to{opacity:1;transform:none} }
+    .modal-header { padding:22px 24px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-header h3 { font-size:16px; font-weight:700; }
+    .modal-header p  { font-size:13px; color:var(--muted); margin-top:2px; }
+    .modal-close { width:30px; height:30px; border-radius:8px; border:none; background:var(--bg); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:all 0.15s; }
+    .modal-close:hover { background:var(--border); }
+    .modal-body   { padding:20px 24px; }
+    .modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+    .form-group   { margin-bottom:16px; }
+    .form-label   { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px; }
+    .form-control { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); outline:none; transition:border-color 0.15s; }
+    .form-control:focus { border-color:var(--primary); }
+    .status-btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .status-btn { padding:12px; border-radius:10px; border:2px solid var(--border); cursor:pointer; text-align:center; transition:all 0.15s; background:var(--surface); }
+    .status-btn .sb-icon  { font-size:22px; margin-bottom:4px; }
+    .status-btn .sb-label { font-size:13px; font-weight:600; color:var(--muted); }
+    .status-btn.selected-present { border-color:var(--success); background:var(--success-bg); }
+    .status-btn.selected-present .sb-label { color:var(--success); }
+    .status-btn.selected-absent  { border-color:var(--danger);  background:var(--danger-bg); }
+    .status-btn.selected-absent  .sb-label { color:var(--danger); }
+
+    /* SCORECARD PANEL */
+    .scorecard-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.35); backdrop-filter:blur(3px); z-index:300; }
+    .scorecard-overlay.open { display:block; }
+    .scorecard-panel { position:fixed; top:0; right:0; width:420px; max-width:95vw; height:100vh; background:var(--surface); border-left:1px solid var(--border); box-shadow:-8px 0 40px rgba(0,0,0,0.12); display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.32s cubic-bezier(0.4,0,0.2,1); z-index:301; overflow:hidden; }
+    .scorecard-panel.open { transform:translateX(0); }
+    .sc-header { padding:20px 22px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; flex-shrink:0; }
+    .sc-avatar { width:52px; height:52px; border-radius:50%; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; }
+    .sc-header-info { flex:1; min-width:0; }
+    .sc-name { font-size:17px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sc-meta { font-size:12px; color:var(--muted); margin-top:3px; }
+    .sc-close { width:32px; height:32px; border-radius:8px; border:none; background:var(--bg); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted); flex-shrink:0; transition:all 0.15s; }
+    .sc-close:hover { background:var(--border); color:var(--text); }
+    .sc-body { flex:1; overflow-y:auto; padding:20px 22px; display:flex; flex-direction:column; gap:20px; }
+    .sc-today-strip { border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; flex-wrap:wrap; }
+    .sc-today-strip.present { background:var(--success-bg); color:var(--success); }
+    .sc-today-strip.absent  { background:var(--danger-bg);  color:var(--danger);  }
+    .sc-today-strip-dot { width:10px; height:10px; border-radius:50%; background:currentColor; flex-shrink:0; }
+    .sc-today-time { margin-left:auto; font-family:'DM Mono',monospace; font-size:18px; font-weight:700; }
+    .sc-donut-wrap { display:flex; align-items:center; gap:20px; }
+    .sc-donut { position:relative; flex-shrink:0; width:110px; height:110px; }
+    .sc-donut svg { width:110px; height:110px; transform:rotate(-90deg); }
+    .sc-donut-track { fill:none; stroke:var(--border); stroke-width:10; }
+    .sc-donut-fill  { fill:none; stroke-width:10; stroke-linecap:round; transition:stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .sc-donut-fill.green  { stroke:var(--success); }
+    .sc-donut-fill.yellow { stroke:var(--warning); }
+    .sc-donut-fill.red    { stroke:var(--danger);  }
+    .sc-donut-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .sc-donut-pct   { font-size:22px; font-weight:700; font-family:'DM Mono',monospace; letter-spacing:-1px; line-height:1; }
+    .sc-donut-pct.green  { color:var(--success); }
+    .sc-donut-pct.yellow { color:var(--warning); }
+    .sc-donut-pct.red    { color:var(--danger);  }
+    .sc-donut-label { font-size:10px; color:var(--muted); margin-top:2px; font-weight:500; }
+    .sc-donut-legend { flex:1; }
+    .sc-legend-item { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .sc-legend-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .sc-legend-dot.green  { background:var(--success); }
+    .sc-legend-dot.grey   { background:var(--border);  }
+    .sc-legend-text { font-size:13px; color:var(--muted); }
+    .sc-legend-val  { margin-left:auto; font-size:14px; font-weight:700; font-family:'DM Mono',monospace; }
+    .sc-stats-row { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .sc-stat { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+    .sc-stat-val { font-size:20px; font-weight:700; font-family:'DM Mono',monospace; letter-spacing:-0.5px; }
+    .sc-stat-lbl { font-size:11px; color:var(--muted); font-weight:500; margin-top:3px; text-transform:uppercase; letter-spacing:0.4px; }
+    .sc-section-title { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px; }
+    .sc-calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .sc-cal-header { font-size:10px; font-weight:600; color:var(--muted); text-align:center; padding-bottom:4px; }
+    .sc-cal-day { aspect-ratio:1; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:500; position:relative; }
+    .sc-cal-day.present { background:var(--success); color:white; }
+    .sc-cal-day.absent  { background:#FEE2E2; color:var(--danger); }
+    .sc-cal-day.empty   { background:transparent; }
+    .sc-cal-day.future  { background:var(--bg); color:var(--border); }
+    .sc-cal-day[title]:hover::after { content:attr(title); position:absolute; bottom:110%; left:50%; transform:translateX(-50%); background:var(--text); color:white; font-size:10px; padding:3px 7px; border-radius:4px; white-space:nowrap; z-index:10; pointer-events:none; }
+    .sc-history { display:flex; flex-direction:column; gap:6px; }
+    .sc-history-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; background:var(--bg); font-size:13px; }
+    .sc-history-date  { color:var(--muted); flex:1; }
+    .sc-history-time  { color:var(--success); font-family:'DM Mono',monospace; font-size:13px; font-weight:600; }
+    .sc-history-time.absent { color:var(--muted); }
+    .sc-history-badge { padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+    .sc-history-badge.present { background:var(--success-bg); color:var(--success); }
+    .sc-history-badge.absent  { background:var(--danger-bg);  color:var(--danger);  }
+    .sc-warning { background:#FFF7ED; border:1px solid #FED7AA; border-radius:10px; padding:12px 14px; font-size:13px; color:#92400E; line-height:1.5; }
+    .sc-warning strong { display:block; margin-bottom:2px; }
+
+    /* TOAST */
+    .toast-container { position:fixed; bottom:24px; right:24px; z-index:999; display:flex; flex-direction:column; gap:8px; }
+    .toast { background:var(--text); color:white; padding:12px 18px; border-radius:10px; font-size:13px; font-weight:500; box-shadow:0 4px 20px rgba(0,0,0,0.2); animation:toastIn 0.25s ease; }
+    @keyframes toastIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+    .toast.success { background:var(--success); }
+    .toast.error   { background:var(--danger);  }
+
+    .empty-state { text-align:center; padding:48px 24px; color:var(--muted); }
+    .empty-state p { font-size:14px; }
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+
+    /* PDF / PRINT */
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: white !important; margin: 0; }
+      .sidebar, .topbar, .btn, .card-actions, .input-group,
+      .nav-badge, .greeting-banner::before, .greeting-banner::after,
+      .stat-card:hover, .student-card:hover,
+      .manualModal, .scorecard-overlay, .scorecard-panel,
+      .toast-container, #btnExportPDF, .btn-outline { display: none !important; }
+      .main { margin-left: 0 !important; }
+      .page-body { padding: 12px !important; gap: 16px !important; }
+      .greeting-banner { background: #1B4FD8 !important; border-radius: 8px !important; padding: 16px 20px !important; page-break-inside: avoid; }
+      .stats-grid { grid-template-columns: repeat(4,1fr) !important; break-inside: avoid; }
+      .stat-card { box-shadow: none !important; border: 1px solid #E2E8F0 !important; page-break-inside: avoid; }
+      .card { box-shadow: none !important; border: 1px solid #E2E8F0 !important; }
+      .student-cards-grid { display: none !important; }
+      table { font-size: 11px !important; }
+      thead th { background: #F4F6F9 !important; }
+      tbody tr { page-break-inside: avoid; }
+      .pdf-header { display: block !important; }
+    }
+    .pdf-header { display: none; padding: 0 0 12px 0; border-bottom: 2px solid #1B4FD8; margin-bottom: 16px; }
+    .pdf-header-title { font-size: 20px; font-weight: 700; color: #1B4FD8; }
+    .pdf-header-meta  { font-size: 12px; color: #64748B; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+    <div class="brand-text"><span>FaceAttend</span><span>Attendance System</span></div>
+  </div>
+  <div class="sidebar-teacher-info">
+    <div class="teacher-avatar" id="sidebarAvatar">T</div>
+    <div class="teacher-name"   id="sidebarName">Teacher</div>
+    <div class="teacher-role">Class Teacher</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a class="nav-item active" href="#dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+    </a>
+    <a class="nav-item" href="/kiosk" target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M20.188 10.934a8 8 0 1 1-8.188-8.19"/><path d="M20 4v4h-4"/></svg>Live Kiosk
+    </a>
+    <a class="nav-item" href="/enroll" target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>Enroll Student
+    </a>
+    <div class="nav-section-label" style="margin-top:8px">Attendance</div>
+    <a class="nav-item" href="#attendance" onclick="scrollToSection('attendance')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>View Attendance
+      <span class="nav-badge" id="atRiskBadge" style="display:none">0</span>
+    </a>
+    <button class="nav-item" onclick="openManualMark()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Manual Mark
+    </button>
+    <button class="nav-item" onclick="exportCSV()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="/logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logout
+    </a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Teacher Dashboard</h1>
+      <p id="topbarSub">Overview of your class</p>
+    </div>
+    <div class="topbar-right">
+      <div class="live-dot">Live</div>
+      <div class="date-badge" id="todayDate">—</div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="greeting-banner">
+      <div class="greeting-text">
+        <h2 id="greetingText">Good morning!</h2>
+        <p  id="greetingSubtext">Here's how your class is doing today.</p>
+      </div>
+      <div class="greeting-meta" id="greetingMeta">Loading...</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-label">Total Students</div>
+        <div class="stat-sub"  id="statTotalSub">enrolled in system</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="stat-value" id="statAvg">—</div>
+        <div class="stat-label">Avg Attendance</div>
+        <div class="stat-sub">across all students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="stat-value" id="statPresent">—</div>
+        <div class="stat-label">Present Today</div>
+        <div class="stat-sub"  id="statPresentSub">marked so far</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="stat-value" id="statAtRisk">—</div>
+        <div class="stat-label">At Risk</div>
+        <div class="stat-sub">below 75% attendance</div>
+      </div>
+    </div>
+
+    <!-- Student Cards -->
+    <div>
+      <div class="section-header">
+        <div><div class="section-title">Your Students</div><div class="section-sub">Click a card to view detailed scorecard</div></div>
+        <div class="input-group">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Search student..." id="cardSearch" oninput="filterCards(this.value)"/>
+        </div>
+      </div>
+      <div class="student-cards-grid" id="studentCardsGrid"></div>
+    </div>
+
+    <!-- Full Table -->
+    <div class="card" id="attendance">
+      <div class="card-header">
+        <div class="card-header-left"><h3>Full Attendance Table</h3><p>All students with complete statistics</p></div>
+        <div class="card-actions">
+          <div class="input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <input type="date" id="dateFilter" onchange="applyDateFilter()"/>
+          </div>
+          <div class="input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search..." id="tableSearch" oninput="filterTable()"/>
+          </div>
+          <button class="btn btn-outline" onclick="exportCSV()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+          </button>
+          <button class="btn btn-outline" onclick="exportPDF()" id="btnExportPDF">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Export PDF
+          </button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th><th>Present</th><th>Absent</th><th>Attendance %</th>
+              <th>Last Seen</th><th>Today</th><th>Check-in Time</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MANUAL MARK MODAL -->
+<div class="modal-overlay" id="manualModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div><h3>Manual Attendance Mark</h3><p>Use this when the camera isn't available</p></div>
+      <button class="modal-close" onclick="closeManualMark()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Select Student</label>
+        <select class="form-control" id="manualStudent"><option value="">— Choose a student —</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-control" id="manualDate"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mark as</label>
+        <div class="status-btns">
+          <div class="status-btn" id="btnPresent" onclick="selectStatus('present')"><div class="sb-icon">✅</div><div class="sb-label">Present</div></div>
+          <div class="status-btn" id="btnAbsent"  onclick="selectStatus('absent')"><div class="sb-icon">❌</div><div class="sb-label">Absent</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeManualMark()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitManualMark()">Save Attendance</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCORECARD PANEL -->
+<div class="scorecard-overlay" id="scorecardOverlay" onclick="closeScorecardPanel()"></div>
+<div class="scorecard-panel"   id="scorecardPanel">
+  <div class="sc-header">
+    <!-- Photo avatar for scorecard — populated by openScorecard() -->
+    <div class="sc-avatar" id="scAvatar"></div>
+    <div class="sc-header-info">
+      <div class="sc-name" id="scName">Student Name</div>
+      <div class="sc-meta" id="scMeta">—</div>
+    </div>
+    <button class="sc-close" onclick="closeScorecardPanel()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="sc-body">
+    <div id="scTodayStrip"></div>
+    <div id="scWarning" class="sc-warning" style="display:none"></div>
+    <div class="sc-donut-wrap">
+      <div class="sc-donut">
+        <svg viewBox="0 0 36 36">
+          <circle class="sc-donut-track" cx="18" cy="18" r="13"/>
+          <circle class="sc-donut-fill" id="scDonutFill" cx="18" cy="18" r="13" stroke-dasharray="0 100"/>
+        </svg>
+        <div class="sc-donut-center">
+          <div class="sc-donut-pct" id="scDonutPct">0%</div>
+          <div class="sc-donut-label">attended</div>
+        </div>
+      </div>
+      <div class="sc-donut-legend" id="scLegend"></div>
+    </div>
+    <div class="sc-stats-row" id="scStatsRow"></div>
+    <div>
+      <div class="sc-section-title">Attendance this month</div>
+      <div class="sc-calendar" id="scCalendar"></div>
+    </div>
+    <div>
+      <div class="sc-section-title">Recent history</div>
+      <div class="sc-history" id="scHistory"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  const TEACHER_NAME = "{{ user.full_name }}";
+  let STUDENTS = {{ summary | tojson }};
+  const FILTER_DATE = {{ filter_date | tojson }};
+  const today = new Date().toISOString().split('T')[0];
+  let selectedStatus = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setupGreeting();
+    refreshStats();
+    renderCards(STUDENTS);
+    renderTable(STUDENTS);
+    populateManualDropdown();
+    document.getElementById('manualDate').value = today;
+    if (FILTER_DATE) document.getElementById('dateFilter').value = FILTER_DATE;
+    startLivePoll();
+  });
+
+  // ── LIVE POLL every 30s ──
+  function startLivePoll() {
+    setInterval(async () => {
+      try {
+        const res = await fetch('/api/teacher/summary');
+        if (!res.ok) return;
+        const data = await res.json();
+        const prevPresent = STUDENTS.filter(s => s.today_status === 'present').length;
+        if (data.present_today === prevPresent && data.summary.length === STUDENTS.length) return;
+        STUDENTS = data.summary;
+        refreshStats();
+        const q = document.getElementById('cardSearch').value;
+        renderCards(q ? STUDENTS.filter(s => s.full_name.toLowerCase().includes(q.toLowerCase())) : STUDENTS);
+        const tq = document.getElementById('tableSearch').value;
+        renderTable(tq ? STUDENTS.filter(s => s.full_name.toLowerCase().includes(tq.toLowerCase())) : STUDENTS);
+        showToast('Attendance data refreshed', 'success');
+      } catch(e) { /* silent */ }
+    }, 30000);
+  }
+
+  function setupGreeting() {
+    const h = new Date().getHours();
+    const greeting = h>=5&&h<12 ? 'Good morning' : h>=12&&h<17 ? 'Good afternoon' : h>=17&&h<21 ? 'Good evening' : 'Good night';
+    const firstName = TEACHER_NAME.split(' ').slice(-1)[0];
+    document.getElementById('greetingText').textContent  = `${greeting}, ${firstName}!`;
+    document.getElementById('sidebarName').textContent   = TEACHER_NAME;
+    document.getElementById('sidebarAvatar').textContent = initials(TEACHER_NAME);
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    document.getElementById('todayDate').textContent = dateStr;
+    document.getElementById('topbarSub').textContent  = dateStr;
+  }
+
+  function refreshStats() {
+    const total   = STUDENTS.length;
+    const avg     = total > 0 ? (STUDENTS.reduce((s, x) => s + Math.min(x.percentage, 100), 0) / total).toFixed(1) : 0;
+    const present = STUDENTS.filter(s => s.today_status === 'present').length;
+    const atRisk  = STUDENTS.filter(s => s.percentage < 75).length;
+    document.getElementById('statTotal').textContent      = total;
+    document.getElementById('statAvg').textContent        = avg + '%';
+    document.getElementById('statPresent').textContent    = present;
+    document.getElementById('statAtRisk').textContent     = atRisk;
+    document.getElementById('statTotalSub').textContent   = `${total} enrolled in system`;
+    document.getElementById('statPresentSub').textContent = `${total - present} absent today`;
+    const badge = document.getElementById('atRiskBadge');
+    badge.textContent = atRisk;
+    badge.style.display = atRisk > 0 ? 'inline-block' : 'none';
+    document.getElementById('greetingSubtext').textContent = `${present} students present today · ${atRisk} need your attention`;
+    document.getElementById('greetingMeta').innerHTML = `${total} students enrolled<br>${present} present today<br>${atRisk} below 75%`;
+  }
+
+  // ── HELPERS ──
+  function pctClass(p) { return p >= 75 ? 'green' : p >= 50 ? 'yellow' : 'red'; }
+  function initials(n) { return n.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+
+  function fmt12h(t) {
+    if (!t) return '—';
+    try {
+      const parts = t.split(':').map(Number);
+      const h = parts[0], m = parts[1];
+      return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+    } catch(e) { return t; }
+  }
+
+  function formatDate(d) {
+    if (!d || d === '—') return '—';
+    try { return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
+    catch(e) { return d; }
+  }
+
+  function recStatus(rec) { return typeof rec === 'string' ? rec : (rec ? rec.status : null); }
+  function recTime(rec)   { return typeof rec === 'string' ? null : (rec ? rec.time : null); }
+
+  function getLastSeen(records) {
+    if (!records) return null;
+    return Object.entries(records)
+      .filter(([, v]) => recStatus(v) === 'present')
+      .map(([k]) => k)
+      .sort()
+      .reverse()[0] || null;
+  }
+
+  function getTodayTime(records) {
+    if (!records) return null;
+    const rec = records[today];
+    return rec ? recTime(rec) : null;
+  }
+
+  // ── AVATAR HTML helper ──
+  // Generates a colored initials avatar (no photo needed).
+  // Color is deterministically chosen from the student's name.
+  const AVATAR_COLORS = [
+    ['#1B4FD8','#EEF2FF'], // blue
+    ['#059669','#ECFDF5'], // green
+    ['#D97706','#FFFBEB'], // amber
+    ['#7C3AED','#F5F3FF'], // purple
+    ['#DB2777','#FDF2F8'], // pink
+    ['#0891B2','#ECFEFF'], // cyan
+    ['#EA580C','#FFF7ED'], // orange
+    ['#65A30D','#F7FEE7'], // lime
+  ];
+
+  function avatarColor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  }
+
+  function avatarHTML(student, size) {
+    const ins      = initials(student.full_name);
+    const [fg, bg] = avatarColor(student.full_name);
+    const fontSize = size === 'card' ? '15px' : size === 'scorecard' ? '19px' : '11px';
+    return `<span style="
+      display:flex; align-items:center; justify-content:center;
+      width:100%; height:100%; border-radius:50%;
+      background:${bg}; color:${fg};
+      font-size:${fontSize}; font-weight:700;
+      letter-spacing:0.5px; font-family:'DM Sans',sans-serif;
+    ">${ins}</span>`;
+  }
+
+  // ── STUDENT CARDS ──
+  function renderCards(students) {
+    const grid = document.getElementById('studentCardsGrid');
+    if (!students.length) {
+      grid.innerHTML = '<div class="empty-state"><p>No students found.</p></div>';
+      return;
+    }
+    grid.innerHTML = students.map(s => {
+      const cls = pctClass(s.percentage);
+      return `<div class="student-card ${s.percentage < 75 ? 'at-risk' : ''}" onclick="openScorecard(${s.id})">
+        <div class="student-card-avatar">${avatarHTML(s, 'card')}</div>
+        <div class="student-card-name">${s.full_name}</div>
+        <div class="student-card-pct ${cls}">${s.percentage}%</div>
+        <div class="student-card-meta">${s.present}/${s.total_days} days · ${s.today_status === 'present' ? 'Present today' : 'Absent today'}</div>
+        <div class="mini-bar"><div class="mini-bar-fill ${cls}" style="width:${Math.min(s.percentage, 100)}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  function filterCards(q) {
+    renderCards(STUDENTS.filter(s => s.full_name.toLowerCase().includes(q.toLowerCase())));
+  }
+
+  // ── TABLE ──
+  function renderTable(students) {
+    const tbody = document.getElementById('studentTableBody');
+    if (!students.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p>No records found.</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = students.map(s => {
+      const cls = pctClass(s.percentage);
+      const todayTime = getTodayTime(s.records);
+      let todayHtml = `<span class="today-status unknown">—</span>`;
+      if (s.today_status === 'present') todayHtml = `<span class="today-status present">Present</span>`;
+      if (s.today_status === 'absent')  todayHtml = `<span class="today-status absent">Absent</span>`;
+      const timeHtml = todayTime
+        ? `<span style="font-family:'DM Mono',monospace;font-weight:600;color:var(--success)">${fmt12h(todayTime)}</span>`
+        : `<span style="color:var(--muted)">—</span>`;
+      const lastSeen = getLastSeen(s.records);
+      return `<tr id="row-${s.id}">
+        <td><div class="student-name-cell">
+          <div class="avatar-sm">${avatarHTML(s, 'table')}</div>
+          <div>
+            <div class="name-link" onclick="openScorecard(${s.id})">${s.full_name}</div>
+            ${s.percentage < 75 ? '<div style="font-size:11px;color:var(--danger);margin-top:1px">Below 75% — at risk</div>' : ''}
+          </div>
+        </div></td>
+        <td style="font-family:'DM Mono',monospace">${s.present}</td>
+        <td style="font-family:'DM Mono',monospace">${s.absent}</td>
+        <td><span class="pct-badge ${cls}">${s.percentage}%</span></td>
+        <td style="color:var(--muted)">${formatDate(lastSeen)}</td>
+        <td>${todayHtml}</td>
+        <td>${timeHtml}</td>
+        <td><button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="quickMark(${s.id},'${s.full_name}')">Mark</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filterTable() {
+    const q = document.getElementById('tableSearch').value.toLowerCase();
+    renderTable(STUDENTS.filter(s => s.full_name.toLowerCase().includes(q)));
+  }
+
+  function applyDateFilter() {
+    const date = document.getElementById('dateFilter').value;
+    window.location.href = date ? `/teacher/dashboard?date=${date}` : `/teacher/dashboard`;
+  }
+
+  // ── MANUAL MARK ──
+  function populateManualDropdown() {
+    const sel = document.getElementById('manualStudent');
+    while (sel.options.length > 1) sel.remove(1);
+    STUDENTS.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.full_name;
+      o.dataset.id = s.id;
+      o.textContent = s.full_name;
+      sel.appendChild(o);
+    });
+  }
+
+  function openManualMark() {
+    selectedStatus = null;
+    document.getElementById('btnPresent').className = 'status-btn';
+    document.getElementById('btnAbsent').className  = 'status-btn';
+    document.getElementById('manualStudent').value  = '';
+    document.getElementById('manualModal').classList.add('open');
+  }
+
+  function quickMark(id, name) {
+    openManualMark();
+    document.getElementById('manualStudent').value = name;
+  }
+
+  function closeManualMark() { document.getElementById('manualModal').classList.remove('open'); }
+
+  function selectStatus(status) {
+    selectedStatus = status;
+    document.getElementById('btnPresent').className = 'status-btn' + (status === 'present' ? ' selected-present' : '');
+    document.getElementById('btnAbsent').className  = 'status-btn' + (status === 'absent'  ? ' selected-absent'  : '');
+  }
+
+  async function submitManualMark() {
+    const studentName = document.getElementById('manualStudent').value;
+    const date        = document.getElementById('manualDate').value;
+    if (!studentName)    { showToast('Please select a student.', 'error'); return; }
+    if (!date)           { showToast('Please select a date.', 'error'); return; }
+    if (!selectedStatus) { showToast('Please choose Present or Absent.', 'error'); return; }
+    try {
+      const resp = await fetch('/teacher/manual_mark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_name: studentName, date, status: selectedStatus })
+      });
+      const data = await resp.json();
+      if (data.status === 'ok') {
+        closeManualMark();
+        showToast(data.message || 'Attendance saved.', 'success');
+        applyMarkLocally(studentName, date, selectedStatus);
+      } else {
+        showToast(data.error || 'Failed to save.', 'error');
+      }
+    } catch(e) {
+      showToast('Could not reach server. Please try again.', 'error');
+    }
+  }
+
+  function applyMarkLocally(studentName, date, status) {
+    const s = STUDENTS.find(x => x.full_name === studentName);
+    if (!s) return;
+    const prev = s.records ? recStatus(s.records[date]) : null;
+    if (!s.records) s.records = {};
+    if (prev === 'present' && status === 'absent') {
+      s.present = Math.max(0, s.present - 1);
+      s.absent  = Math.min(s.total_days, s.absent + 1);
+    } else if (prev === 'absent' && status === 'present') {
+      s.absent  = Math.max(0, s.absent - 1);
+      s.present = Math.min(s.total_days, s.present + 1);
+    } else if (!prev) {
+      if (status === 'present') s.present++; else s.absent++;
+      s.total_days++;
+      s.total++;
+    }
+    const now = new Date().toTimeString().slice(0, 8);
+    s.records[date] = { status, time: status === 'present' ? now : '' };
+    s.percentage = s.total_days > 0 ? Math.min(100, Math.round((s.present / s.total_days) * 1000) / 10) : 0;
+    if (date === today) s.today_status = status;
+    refreshStats();
+    const q = document.getElementById('cardSearch').value;
+    renderCards(q ? STUDENTS.filter(x => x.full_name.toLowerCase().includes(q.toLowerCase())) : STUDENTS);
+    const tq = document.getElementById('tableSearch').value;
+    renderTable(tq ? STUDENTS.filter(x => x.full_name.toLowerCase().includes(tq.toLowerCase())) : STUDENTS);
+    if (document.getElementById('scorecardPanel').classList.contains('open') &&
+        document.getElementById('scName').textContent === studentName) {
+      openScorecard(s.id);
+    }
+  }
+
+  function exportCSV() { window.location.href = '/teacher/export'; }
+  function scrollToSection(id) { document.getElementById(id)?.scrollIntoView({ behavior:'smooth' }); }
+
+  // ── SCORECARD ──
+  function openScorecard(id) {
+    const s = STUDENTS.find(x => x.id === id);
+    if (!s) return;
+    const cls       = pctClass(s.percentage);
+    const lastSeen  = getLastSeen(s.records);
+    const todayRec  = s.records ? s.records[today] : null;
+    const todayTime = recTime(todayRec);
+
+    // ── Photo avatar in scorecard panel ──
+    const scAvatar = document.getElementById('scAvatar');
+    scAvatar.innerHTML = avatarHTML(s, 'scorecard');
+
+    document.getElementById('scName').textContent = s.full_name;
+    document.getElementById('scMeta').textContent = `Last seen: ${formatDate(lastSeen)} · ${s.total_days} school days tracked`;
+
+    const isPresent = s.today_status === 'present';
+    document.getElementById('scTodayStrip').innerHTML = isPresent
+      ? `<div class="sc-today-strip present">
+           <div class="sc-today-strip-dot"></div>
+           <span>Present today — marked via face recognition</span>
+           ${todayTime ? `<div class="sc-today-time">${fmt12h(todayTime)}</div>` : ''}
+         </div>`
+      : `<div class="sc-today-strip absent">
+           <div class="sc-today-strip-dot"></div>
+           <span>Not yet marked today</span>
+         </div>`;
+
+    const warn = document.getElementById('scWarning');
+    if (s.percentage < 75) {
+      const gap = Math.max(0, Math.ceil((0.75 * s.total_days - s.present) / 0.25));
+      warn.style.display = 'block';
+      warn.innerHTML = `<strong>Attendance below 75%</strong>${s.full_name.split(' ')[0]} needs to attend at least <strong>${gap} more consecutive day${gap !== 1 ? 's' : ''}</strong> to reach the required 75%.`;
+    } else {
+      warn.style.display = 'none';
+    }
+
+    const circ = 2 * Math.PI * 13;
+    const fill = document.getElementById('scDonutFill');
+    fill.setAttribute('stroke-dasharray', `${((s.percentage / 100) * circ).toFixed(2)} ${circ.toFixed(2)}`);
+    fill.className = `sc-donut-fill ${cls}`;
+    const pctEl = document.getElementById('scDonutPct');
+    pctEl.textContent = s.percentage + '%';
+    pctEl.className   = `sc-donut-pct ${cls}`;
+
+    document.getElementById('scLegend').innerHTML = `
+      <div class="sc-legend-item"><div class="sc-legend-dot ${cls}"></div><div class="sc-legend-text">Present days</div><div class="sc-legend-val">${s.present}</div></div>
+      <div class="sc-legend-item"><div class="sc-legend-dot grey"></div><div class="sc-legend-text">Absent days</div><div class="sc-legend-val">${s.absent}</div></div>
+      <div class="sc-legend-item"><div class="sc-legend-dot ${cls}"></div><div class="sc-legend-text">Total days</div><div class="sc-legend-val">${s.total_days}</div></div>`;
+
+    const streak = computeStreak(s.records);
+    document.getElementById('scStatsRow').innerHTML = `
+      <div class="sc-stat"><div class="sc-stat-val">${s.present}</div><div class="sc-stat-lbl">Days Present</div></div>
+      <div class="sc-stat"><div class="sc-stat-val">${s.absent}</div><div class="sc-stat-lbl">Days Absent</div></div>
+      <div class="sc-stat"><div class="sc-stat-val">${streak}</div><div class="sc-stat-lbl">Current Streak</div></div>
+      <div class="sc-stat"><div class="sc-stat-val" style="font-size:13px">${formatDate(lastSeen)}</div><div class="sc-stat-lbl">Last Seen</div></div>`;
+
+    renderScorecardCalendar(s.records);
+    renderScorecardHistory(s.records);
+    document.getElementById('scorecardOverlay').classList.add('open');
+    document.getElementById('scorecardPanel').classList.add('open');
+  }
+
+  function closeScorecardPanel() {
+    document.getElementById('scorecardOverlay').classList.remove('open');
+    document.getElementById('scorecardPanel').classList.remove('open');
+  }
+
+  function computeStreak(records) {
+    if (!records) return 0;
+    let streak = 0;
+    const check = new Date();
+    for (let i = 0; i < 60; i++) {
+      const dow = check.getDay();
+      if (dow === 0 || dow === 6) { check.setDate(check.getDate() - 1); continue; }
+      const key = check.toISOString().split('T')[0];
+      if (recStatus(records[key]) === 'present') { streak++; check.setDate(check.getDate() - 1); }
+      else break;
+    }
+    return streak;
+  }
+
+  function renderScorecardCalendar(records) {
+    const cal = document.getElementById('scCalendar');
+    const now = new Date(), year = now.getFullYear(), month = now.getMonth(), todayDate = now.getDate();
+    const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    let html = days.map(d => `<div class="sc-cal-header">${d}</div>`).join('');
+    const firstDay    = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthName   = now.toLocaleDateString('en-IN', { month:'long' });
+    for (let i = 0; i < firstDay; i++) html += `<div class="sc-cal-day empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dow     = new Date(year, month, d).getDay();
+      const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const rec     = records ? records[dateKey] : null;
+      const status  = recStatus(rec);
+      const time    = recTime(rec);
+      let cls = 'future', tip = '';
+      if (dow === 0 || dow === 6)    { cls = 'future';  tip = 'Weekend'; }
+      else if (d > todayDate)        { cls = 'future';  tip = 'Upcoming'; }
+      else if (status === 'present') { cls = 'present'; tip = `Present — ${d} ${monthName}${time ? ' · ' + fmt12h(time) : ''}`; }
+      else if (status === 'absent')  { cls = 'absent';  tip = `Absent — ${d} ${monthName}`; }
+      else                           { cls = 'future';  tip = 'No data'; }
+      html += `<div class="sc-cal-day ${cls}" title="${tip}">${d}</div>`;
+    }
+    cal.innerHTML = html;
+  }
+
+  function renderScorecardHistory(records) {
+    const hist = document.getElementById('scHistory');
+    if (!records) { hist.innerHTML = '<div style="color:var(--muted);font-size:13px">No history available.</div>'; return; }
+    const entries = Object.entries(records).sort(([a], [b]) => b.localeCompare(a)).slice(0, 8);
+    if (!entries.length) { hist.innerHTML = '<div style="color:var(--muted);font-size:13px">No records found.</div>'; return; }
+    hist.innerHTML = entries.map(([dateStr, rec]) => {
+      const status = recStatus(rec), time = recTime(rec);
+      const d = new Date(dateStr + 'T00:00:00');
+      const label = d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+      const timeHtml = status === 'present'
+        ? `<span class="sc-history-time">${time ? fmt12h(time) : 'Marked'}</span>`
+        : `<span class="sc-history-time absent">—</span>`;
+      return `<div class="sc-history-row">
+        <div class="sc-history-date">${label}</div>
+        ${timeHtml}
+        <span class="sc-history-badge ${status}">${status === 'present' ? 'Present' : 'Absent'}</span>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('manualModal').addEventListener('click', function(e) {
+    if (e.target === this) closeManualMark();
+  });
+
+  function showToast(msg, type = '') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  function exportPDF() {
+    const btn = document.getElementById('btnExportPDF');
+    if (btn) { btn.textContent = 'Preparing...'; btn.disabled = true; }
+    setTimeout(function() {
+      window.print();
+      setTimeout(function() {
+        if (btn) { btn.innerHTML = 'Export PDF'; btn.disabled = false; }
+      }, 1500);
+    }, 150);
+  }
+</script>
+</body>
+</html>
