@@ -53,5 +53,3 @@ face-attendance-system/
 └── README.md
 
 ---
-
-## 🏗️ System Architecture
